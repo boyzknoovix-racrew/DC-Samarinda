@@ -225,7 +225,7 @@
 
     .cards {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 15px;
       margin-bottom: 20px;
     }
@@ -270,7 +270,7 @@
 
     .info-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 15px;
     }
 
@@ -556,7 +556,6 @@
     </header>
 
     <main class="container">
-
       <div id="adminPanel" class="admin-panel" style="display:none">
         <h3>⚙️ ADMIN DATA MANAGEMENT</h3>
 
@@ -811,7 +810,7 @@
       return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-        request.onupgradeneeded = function(e) {
+        request.onupgradeneeded = function (e) {
           const database = e.target.result;
           if (!database.objectStoreNames.contains(STORE_NAME)) {
             database.createObjectStore(STORE_NAME, {
@@ -821,12 +820,12 @@
           }
         };
 
-        request.onsuccess = function(e) {
+        request.onsuccess = function (e) {
           db = e.target.result;
           resolve(db);
         };
 
-        request.onerror = function() {
+        request.onerror = function () {
           reject(request.error);
         };
       });
@@ -838,11 +837,11 @@
           .objectStore(STORE_NAME)
           .getAll();
 
-        request.onsuccess = function() {
+        request.onsuccess = function () {
           resolve(request.result || []);
         };
 
-        request.onerror = function() {
+        request.onerror = function () {
           reject(request.error);
         };
       });
@@ -854,8 +853,8 @@
           .objectStore(STORE_NAME)
           .clear();
 
-        request.onsuccess = function() { resolve(); };
-        request.onerror = function() { reject(request.error); };
+        request.onsuccess = function () { resolve(); };
+        request.onerror = function () { reject(request.error); };
       });
     }
 
@@ -864,12 +863,12 @@
         const transaction = db.transaction(STORE_NAME, "readwrite");
         const store = transaction.objectStore(STORE_NAME);
 
-        records.forEach(function(item) {
+        records.forEach(function (item) {
           store.add(item);
         });
 
-        transaction.oncomplete = function() { resolve(); };
-        transaction.onerror = function() { reject(transaction.error); };
+        transaction.oncomplete = function () { resolve(); };
+        transaction.onerror = function () { reject(transaction.error); };
       });
     }
 
@@ -900,7 +899,7 @@
       }
 
       if (type === "supplier") {
-        const supplier = data.find(function(item) {
+        const supplier = data.find(function (item) {
           const code = normalizeSupplierCode(item.SUPPLIER_CODE);
           return code === normalizedUsername;
         });
@@ -940,7 +939,6 @@
 
       document.getElementById("app").style.display = "none";
       document.getElementById("loginPage").style.display = "flex";
-
       document.getElementById("username").value = "";
       document.getElementById("password").value = "";
     }
@@ -951,16 +949,14 @@
 
       const map = new Map();
 
-      data.forEach(function(item) {
+      data.forEach(function (item) {
         const code = normalizeSupplierCode(item.SUPPLIER_CODE);
         const name = String(item.SUPPLIER_NAME || "").trim();
 
-        if (code) {
-          map.set(code, name);
-        }
+        if (code) map.set(code, name);
       });
 
-      Array.from(map.keys()).sort().forEach(function(code) {
+      Array.from(map.keys()).sort().forEach(function (code) {
         const option = document.createElement("option");
         option.value = code;
         option.textContent = code + " - " + map.get(code);
@@ -981,7 +977,7 @@
 
       if (currentRole === "supplier") {
         const currentSupplierCode = normalizeSupplierCode(currentUser);
-        rows = rows.filter(function(item) {
+        rows = rows.filter(function (item) {
           return normalizeSupplierCode(item.SUPPLIER_CODE) === currentSupplierCode;
         });
       }
@@ -989,7 +985,7 @@
       if (currentRole === "admin") {
         const supplier = normalizeSupplierCode(document.getElementById("supplierFilter").value);
         if (supplier) {
-          rows = rows.filter(function(item) {
+          rows = rows.filter(function (item) {
             return normalizeSupplierCode(item.SUPPLIER_CODE) === supplier;
           });
         }
@@ -997,7 +993,7 @@
 
       const q = document.getElementById("searchInput").value.toLowerCase().trim();
       if (q) {
-        rows = rows.filter(function(item) {
+        rows = rows.filter(function (item) {
           const haystack = [
             item.SUPPLIER_CODE,
             item.SUPPLIER_NAME,
@@ -1014,7 +1010,7 @@
 
       const statusValue = normalizeStatus(document.getElementById("statusFilter").value);
       if (statusValue) {
-        rows = rows.filter(function(item) {
+        rows = rows.filter(function (item) {
           return normalizeStatus(getEffectiveStatus(item)) === statusValue;
         });
       }
@@ -1034,7 +1030,7 @@
         throw new Error("CSV tidak memiliki data.");
       }
 
-      const keys = new Set(Object.keys(rows[0]).map(function(k) {
+      const keys = new Set(Object.keys(rows[0]).map(function (k) {
         return String(k).toUpperCase();
       }));
 
@@ -1047,7 +1043,7 @@
         "SL_VALUE"
       ];
 
-      const missing = required.filter(function(field) {
+      const missing = required.filter(function (field) {
         return !keys.has(field);
       });
 
@@ -1070,27 +1066,20 @@
 
     function getUniquePLU(rows) {
       const set = new Set();
-
-      rows.forEach(function(item) {
+      rows.forEach(function (item) {
         const plu = String(item.PLU || "").trim().toUpperCase();
         if (plu) set.add(plu);
       });
-
       return set;
     }
 
     function getUniqueEmptyStockPLU(rows) {
       const set = new Set();
-
-      rows.forEach(function(item) {
+      rows.forEach(function (item) {
         const plu = String(item.PLU || "").trim().toUpperCase();
         const stock = parseNumber(item.STOCK_QTY);
-
-        if (plu && stock <= 0) {
-          set.add(plu);
-        }
+        if (plu && stock <= 0) set.add(plu);
       });
-
       return set;
     }
 
@@ -1098,14 +1087,14 @@
       let totalPO = 0;
       let totalBTB = 0;
 
-      rows.forEach(function(item) {
+      rows.forEach(function (item) {
         totalPO += parseNumber(item.PO_VALUE);
         totalBTB += parseNumber(item.BTB_VALUE);
       });
 
       if (totalPO <= 0) return 0;
 
-      let result = ((totalBTB / totalPO) * 100);
+      let result = (totalBTB / totalPO) * 100;
       result = Math.max(0, Math.min(100, result));
       return result;
     }
@@ -1114,18 +1103,18 @@
       const uniquePLU = getUniquePLU(rows);
       const emptyPLU = getUniqueEmptyStockPLU(rows);
 
-      const outstanding = rows.filter(function(item) {
+      const outstanding = rows.filter(function (item) {
         return normalizeStatus(item.STATUS).includes("OUTSTANDING");
       }).length;
 
-      const expired = rows.filter(function(item) {
+      const expired = rows.filter(function (item) {
         return normalizeStatus(item.STATUS).includes("EXPIRED");
       }).length;
 
       let totalDSI = 0;
       let dsiCount = 0;
 
-      rows.forEach(function(item) {
+      rows.forEach(function (item) {
         const d = parseNumber(item.DSI_STOCK);
         if (!isNaN(d)) {
           totalDSI += d;
@@ -1144,15 +1133,10 @@
     }
 
     function updateSupplierInfo(rows) {
-      const ids = [
-        "infoSupplierCode",
-        "infoSupplierName",
-        "infoDCCode",
-        "infoDCName"
-      ];
+      const ids = ["infoSupplierCode", "infoSupplierName", "infoDCCode", "infoDCName"];
 
       if (!rows.length) {
-        ids.forEach(function(id) {
+        ids.forEach(function (id) {
           document.getElementById(id).textContent = "-";
         });
 
@@ -1177,13 +1161,13 @@
       let totalBTBQty = 0;
       let latest = null;
 
-      rows.forEach(function(item) {
+      rows.forEach(function (item) {
         totalPOValue += parseNumber(item.PO_VALUE);
         totalBTBValue += parseNumber(item.BTB_VALUE);
         totalPOQty += parseNumber(item.PO_QTY);
         totalBTBQty += parseNumber(item.BTB_QTY);
 
-        [item.LAST_DELIVERY_DATE, item.BTB_DATE].forEach(function(value) {
+        [item.LAST_DELIVERY_DATE, item.BTB_DATE].forEach(function (value) {
           const date = parseDate(value);
           if (date && (!latest || date > latest)) latest = date;
         });
@@ -1197,86 +1181,119 @@
     }
 
     function getServiceLevelDate(row) {
-      let date = parseDate(row.BTB_DATE);
-      if (!date) date = parseDate(row.PO_DATE);
-      return date;
+      if (!row) return null;
+
+      const candidates = [
+        row.BTB_DATE,
+        row.BTBDATE,
+        row.PO_DATE,
+        row.PODATE,
+        row.LAST_DELIVERY_DATE,
+        row.LASTDELIVERYDATE,
+        row.EXPIRED_DATE,
+        row.EXPIREDDATE
+      ];
+
+      for (const value of candidates) {
+        const date = parseDate(value);
+        if (date) return date;
+      }
+
+      return null;
     }
 
     function getMonthlyServiceLevel(rows) {
-      const map = {};
+      const map = new Map();
 
-      rows.forEach(function(row) {
+      rows.forEach(function (row) {
         const date = getServiceLevelDate(row);
         if (!date) return;
 
         const key = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
 
-        if (!map[key]) map[key] = { po: 0, btb: 0 };
+        if (!map.has(key)) {
+          map.set(key, {
+            date: new Date(date.getFullYear(), date.getMonth(), 1),
+            po: 0,
+            btb: 0
+          });
+        }
 
-        map[key].po += parseNumber(row.PO_VALUE);
-        map[key].btb += parseNumber(row.BTB_VALUE);
+        const bucket = map.get(key);
+        bucket.po += parseNumber(row.PO_VALUE);
+        bucket.btb += parseNumber(row.BTB_VALUE);
       });
 
-      return Object.keys(map).sort().map(function(key) {
-        const [year, month] = key.split("-");
-        const date = new Date(Number(year), Number(month) - 1, 1);
+      return Array.from(map.values())
+        .sort(function (a, b) {
+          return a.date - b.date;
+        })
+        .map(function (bucket) {
+          const po = bucket.po;
+          const btb = bucket.btb;
+          const value = po > 0 ? (btb / po) * 100 : 0;
 
-        const po = map[key].po;
-        const btb = map[key].btb;
-        let sl = po > 0 ? (btb / po) * 100 : 0;
-        sl = Math.max(0, Math.min(100, sl));
-
-        return {
-          label: date.toLocaleDateString("id-ID", { month: "short", year: "numeric" }),
-          po: po,
-          btb: btb,
-          value: sl
-        };
-      });
+          return {
+            label: bucket.date.toLocaleDateString("id-ID", { month: "short", year: "numeric" }),
+            po: po,
+            btb: btb,
+            value: Math.max(0, Math.min(100, value))
+          };
+        });
     }
 
-    function getWeekInfo(date) {
-      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-
-      const year = d.getUTCFullYear();
-      const yearStart = new Date(Date.UTC(year, 0, 1));
-      const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-
-      return { year: year, week: week };
+    function getWeekStart(date) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      d.setDate(diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
     }
 
     function getWeeklyServiceLevel(rows) {
-      const map = {};
+      const map = new Map();
 
-      rows.forEach(function(row) {
+      rows.forEach(function (row) {
         const date = getServiceLevelDate(row);
         if (!date) return;
 
-        const info = getWeekInfo(date);
-        const key = info.year + "-W" + String(info.week).padStart(2, "0");
+        const weekStart = getWeekStart(date);
+        const key = weekStart.toISOString().slice(0, 10);
 
-        if (!map[key]) map[key] = { po: 0, btb: 0 };
+        if (!map.has(key)) {
+          map.set(key, {
+            start: new Date(weekStart),
+            end: new Date(weekStart.getTime() + (6 * 24 * 60 * 60 * 1000)),
+            po: 0,
+            btb: 0
+          });
+        }
 
-        map[key].po += parseNumber(row.PO_VALUE);
-        map[key].btb += parseNumber(row.BTB_VALUE);
+        const bucket = map.get(key);
+        bucket.po += parseNumber(row.PO_VALUE);
+        bucket.btb += parseNumber(row.BTB_VALUE);
       });
 
-      return Object.keys(map).sort().map(function(key) {
-        const po = map[key].po;
-        const btb = map[key].btb;
+      return Array.from(map.values())
+        .sort(function (a, b) {
+          return a.start - b.start;
+        })
+        .map(function (bucket) {
+          const po = bucket.po;
+          const btb = bucket.btb;
+          const value = po > 0 ? (btb / po) * 100 : 0;
 
-        let sl = po > 0 ? (btb / po) * 100 : 0;
-        sl = Math.max(0, Math.min(100, sl));
-
-        return {
-          label: key,
-          po: po,
-          btb: btb,
-          value: sl
-        };
-      });
+          return {
+            label:
+              bucket.start.toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) +
+              " - " +
+              bucket.end.toLocaleDateString("id-ID", { day: "2-digit", month: "short" }),
+            po: po,
+            btb: btb,
+            value: Math.max(0, Math.min(100, value))
+          };
+        });
     }
 
     function createGradient(ctx) {
@@ -1288,8 +1305,16 @@
     }
 
     function renderServiceLevelCharts(rows) {
-      const monthly = getMonthlyServiceLevel(rows);
-      const weekly = getWeeklyServiceLevel(rows);
+      let monthly = getMonthlyServiceLevel(rows);
+      let weekly = getWeeklyServiceLevel(rows);
+
+      if (!monthly.length) {
+        monthly = [{ label: "Tidak ada data", po: 0, btb: 0, value: 0 }];
+      }
+
+      if (!weekly.length) {
+        weekly = [{ label: "Tidak ada data", po: 0, btb: 0, value: 0 }];
+      }
 
       if (monthlySLChart) monthlySLChart.destroy();
       if (weeklySLChart) weeklySLChart.destroy();
@@ -1317,7 +1342,7 @@
             bodyFont: { size: 11 },
             displayColors: false,
             callbacks: {
-              label: function(context) {
+              label: function (context) {
                 const i = context.dataIndex;
                 const source = context.chart.canvas.id === "monthlySLChart" ? monthly[i] : weekly[i];
 
@@ -1338,7 +1363,7 @@
             offset: 5,
             color: "#1e3a8a",
             font: { size: 10, weight: "bold" },
-            formatter: function(value) {
+            formatter: function (value) {
               return value.toFixed(2) + "%";
             }
           }
@@ -1350,7 +1375,7 @@
             beginAtZero: true,
             ticks: {
               stepSize: 20,
-              callback: function(value) { return value + "%"; }
+              callback: function (value) { return value + "%"; }
             },
             grid: { color: "rgba(148,163,184,.15)" },
             border: { display: false }
@@ -1366,10 +1391,10 @@
       monthlySLChart = new Chart(monthlyCtx, {
         type: "line",
         data: {
-          labels: monthly.map(function(x) { return x.label; }),
+          labels: monthly.map(function (x) { return x.label; }),
           datasets: [{
             label: "Service Level Aktual",
-            data: monthly.map(function(x) { return x.value; }),
+            data: monthly.map(function (x) { return x.value; }),
             borderWidth: 3,
             borderColor: "#2563eb",
             backgroundColor: monthlyGradient,
@@ -1389,10 +1414,10 @@
       weeklySLChart = new Chart(weeklyCtx, {
         type: "line",
         data: {
-          labels: weekly.map(function(x) { return x.label; }),
+          labels: weekly.map(function (x) { return x.label; }),
           datasets: [{
             label: "Service Level Aktual",
-            data: weekly.map(function(x) { return x.value; }),
+            data: weekly.map(function (x) { return x.value; }),
             borderWidth: 3,
             borderColor: "#16a34a",
             backgroundColor: weeklyGradient,
@@ -1420,7 +1445,7 @@
       const rows = filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
       const frag = document.createDocumentFragment();
 
-      rows.forEach(function(item) {
+      rows.forEach(function (item) {
         const tr = document.createElement("tr");
         const effective = getEffectiveStatus(item);
         const status = String(item.STATUS || "").trim();
@@ -1499,7 +1524,7 @@
         const store = transaction.objectStore(STORE_NAME);
         const request = store.get(id);
 
-        request.onsuccess = function() {
+        request.onsuccess = function () {
           const record = request.result;
           if (!record) {
             reject(new Error("Data tidak ditemukan"));
@@ -1509,8 +1534,8 @@
           Object.assign(record, changes);
 
           const updateRequest = store.put(record);
-          updateRequest.onsuccess = function() {
-            const index = data.findIndex(function(item) {
+          updateRequest.onsuccess = function () {
+            const index = data.findIndex(function (item) {
               return item._id === id;
             });
 
@@ -1519,12 +1544,12 @@
             resolve();
           };
 
-          updateRequest.onerror = function() {
+          updateRequest.onerror = function () {
             reject(updateRequest.error);
           };
         };
 
-        request.onerror = function() {
+        request.onerror = function () {
           reject(request.error);
         };
       });
@@ -1537,7 +1562,7 @@
         return;
       }
 
-      const record = data.find(function(item) { return item._id === id; });
+      const record = data.find(function (item) { return item._id === id; });
       if (record && parseSL(record.SL_VALUE) >= 95) {
         showToast("SL 95%-100% otomatis COMPLETE.");
         renderDashboard();
@@ -1597,7 +1622,7 @@
         showProgress(25, "Menyiapkan " + rows.length.toLocaleString("id-ID") + " baris data...");
 
         const now = new Date().toISOString();
-        const normalized = rows.map(function(row) {
+        const normalized = rows.map(function (row) {
           return normalizeRow(row, now);
         });
 
@@ -1645,11 +1670,11 @@
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
-        reader.onload = function(e) {
+        reader.onload = function (e) {
           resolve(e.target.result);
         };
 
-        reader.onerror = function() {
+        reader.onerror = function () {
           reject(new Error("File tidak dapat dibaca."));
         };
 
@@ -1692,7 +1717,7 @@
           row.push(value);
           value = "";
 
-          if (row.some(function(cell) {
+          if (row.some(function (cell) {
             return String(cell).trim();
           })) {
             rows.push(row);
@@ -1707,18 +1732,18 @@
 
       if (value !== "" || row.length) {
         row.push(value);
-        if (row.some(function(cell) { return String(cell).trim(); })) rows.push(row);
+        if (row.some(function (cell) { return String(cell).trim(); })) rows.push(row);
       }
 
       if (rows.length < 2) return [];
 
-      const headers = rows[0].map(function(header) {
+      const headers = rows[0].map(function (header) {
         return String(header).replace(/^\uFEFF/, "").trim().toUpperCase();
       });
 
-      return rows.slice(1).map(function(record) {
+      return rows.slice(1).map(function (record) {
         const obj = {};
-        headers.forEach(function(header, index) {
+        headers.forEach(function (header, index) {
           obj[header] = record[index] !== undefined ? String(record[index]).trim() : "";
         });
         return obj;
@@ -1791,34 +1816,34 @@
     }
 
     function normalizeRow(row, now) {
-      const slRaw = getFlexible(row, ["SL_VALUE","SL VALUE","SERVICE LEVEL","SERVICE_LEVEL","SL"], 0);
+      const slRaw = getFlexible(row, ["SL_VALUE", "SL VALUE", "SERVICE LEVEL", "SERVICE_LEVEL", "SL"], 0);
       const sl = parseSL(slRaw);
 
-      let status = String(getFlexible(row, ["STATUS","STATUS PO"], "")).trim().toUpperCase();
+      let status = String(getFlexible(row, ["STATUS", "STATUS PO"], "")).trim().toUpperCase();
       if (sl >= 95) status = "COMPLETE";
 
       return {
-        SUPPLIER_CODE: getFlexible(row, ["SUPPLIER_CODE","SUPPLIER CODE"], ""),
-        SUPPLIER_NAME: getFlexible(row, ["SUPPLIER_NAME","SUPPLIER NAME"], ""),
-        SUPPLIER_PASSWORD: getFlexible(row, ["SUPPLIER_PASSWORD","SUPPLIER PASSWORD"], ""),
-        PLU: getFlexible(row, ["PLU"], ""),
-        PLU_DESC: getFlexible(row, ["PLU_DESC","PLU DESC"], ""),
-        DC_CODE: getFlexible(row, ["DC_CODE","DC CODE"], ""),
-        DC_NAME: getFlexible(row, ["DC_NAME","DC NAME"], ""),
-        PO_NUMBER: getFlexible(row, ["PO_NUMBER","PO NUMBER"], ""),
-        PO_DATE: getFlexible(row, ["PO_DATE","PO DATE"], ""),
-        EXPIRED_DATE: getFlexible(row, ["EXPIRED_DATE","EXPIRED DATE"], ""),
-        PO_QTY: getFlexible(row, ["PO_QTY","PO QTY"], 0),
-        PO_VALUE: getFlexible(row, ["PO_VALUE","PO VALUE"], 0),
-        BTB_QTY: getFlexible(row, ["BTB_QTY","BTB QTY"], 0),
-        BTB_VALUE: getFlexible(row, ["BTB_VALUE","BTB VALUE","BPB VALUE","BPB_VALUE"], 0),
-        BTB_DATE: getFlexible(row, ["BTB_DATE","BTB DATE","BPB DATE","BPB_DATE"], ""),
+        SUPPLIER_CODE: String(getFlexible(row, ["SUPPLIER_CODE", "SUPPLIER CODE"], "")).trim(),
+        SUPPLIER_NAME: String(getFlexible(row, ["SUPPLIER_NAME", "SUPPLIER NAME"], "")).trim(),
+        SUPPLIER_PASSWORD: String(getFlexible(row, ["SUPPLIER_PASSWORD", "SUPPLIER PASSWORD"], "")).trim(),
+        PLU: String(getFlexible(row, ["PLU"], "")).trim(),
+        PLU_DESC: String(getFlexible(row, ["PLU_DESC", "PLU DESC"], "")).trim(),
+        DC_CODE: String(getFlexible(row, ["DC_CODE", "DC CODE"], "")).trim(),
+        DC_NAME: String(getFlexible(row, ["DC_NAME", "DC NAME"], "")).trim(),
+        PO_NUMBER: String(getFlexible(row, ["PO_NUMBER", "PO NUMBER"], "")).trim(),
+        PO_DATE: String(getFlexible(row, ["PO_DATE", "PO DATE"], "")).trim(),
+        EXPIRED_DATE: String(getFlexible(row, ["EXPIRED_DATE", "EXPIRED DATE"], "")).trim(),
+        PO_QTY: getFlexible(row, ["PO_QTY", "PO QTY"], 0),
+        PO_VALUE: getFlexible(row, ["PO_VALUE", "PO VALUE"], 0),
+        BTB_QTY: getFlexible(row, ["BTB_QTY", "BTB QTY"], 0),
+        BTB_VALUE: getFlexible(row, ["BTB_VALUE", "BTB VALUE", "BPB VALUE", "BPB_VALUE"], 0),
+        BTB_DATE: String(getFlexible(row, ["BTB_DATE", "BTB DATE", "BPB DATE", "BPB_DATE"], "")).trim(),
         SL_VALUE: sl,
-        STOCK_QTY: getFlexible(row, ["STOCK_QTY","STOCK QTY","STOCK","STOCKQUANTITY"], 0),
-        DSI_STOCK: getFlexible(row, ["DSI_STOCK","DSI STOCK","DSI","DSISTOCK"], 0),
-        LAST_DELIVERY_DATE: getFlexible(row, ["LAST_DELIVERY_DATE","LAST DELIVERY DATE","LAST DELIVERY"], ""),
+        STOCK_QTY: getFlexible(row, ["STOCK_QTY", "STOCK QTY", "STOCK", "STOCKQUANTITY"], 0),
+        DSI_STOCK: getFlexible(row, ["DSI_STOCK", "DSI STOCK", "DSI", "DSISTOCK"], 0),
+        LAST_DELIVERY_DATE: String(getFlexible(row, ["LAST_DELIVERY_DATE", "LAST DELIVERY DATE", "LAST DELIVERY"], "")).trim(),
         STATUS: status,
-        KETERANGAN: getFlexible(row, ["KETERANGAN","KETERANGAN SUPPLIER","REMARK","REMARKS"], ""),
+        KETERANGAN: String(getFlexible(row, ["KETERANGAN", "KETERANGAN SUPPLIER", "REMARK", "REMARKS"], "")).trim(),
         UPLOAD_DATE: now,
         UPDATE_DATE: now
       };
@@ -1879,42 +1904,54 @@
     }
 
     function parseDate(value) {
-      if (!value) return null;
+      if (value === null || value === undefined || value === "") return null;
 
       const text = String(value).trim();
+      if (!text) return null;
 
-      const match = text.match(/^([0-9]{1,2})[\\/-]([0-9]{1,2})[\\/-]([0-9]{2,4})$/);
-      if (match) {
-        let day = +match[1];
-        let month = +match[2];
-        let year = +match[3];
+      const normalized = text
+        .replace(/\./g, "/")
+        .replace(/-/g, "/")
+        .replace(/T/g, " ")
+        .replace(/Z/g, "");
+
+      const patterns = [
+        /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/,
+        /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+\d{1,2}:\d{2}(:\d{2})?$/,
+        /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/,
+        /^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+\d{1,2}:\d{2}(:\d{2})?$/,
+      ];
+
+      for (const pattern of patterns) {
+        const match = normalized.match(pattern);
+        if (!match) continue;
+
+        let day, month, year;
+
+        if (match[1] && Number(match[1]) > 12) {
+          day = Number(match[1]);
+          month = Number(match[2]);
+          year = Number(match[3]);
+        } else if (match[2] && Number(match[2]) > 12) {
+          month = Number(match[1]);
+          day = Number(match[2]);
+          year = Number(match[3]);
+        } else {
+          day = Number(match[1]);
+          month = Number(match[2]);
+          year = Number(match[3]);
+        }
 
         if (year < 100) year += 2000;
 
-        let date;
-
-        if (day > 12) {
-          date = new Date(year, month - 1, day);
-        } else if (month > 12) {
-          date = new Date(year, day - 1, month);
-        } else {
-          date = new Date(year, month - 1, day);
-        }
-
-        return isNaN(date.getTime()) ? null : date;
+        const date = new Date(year, month - 1, day);
+        if (!isNaN(date.getTime())) return date;
       }
 
-      if (/^\\d{5}$/.test(text)) {
-        const serial = Number(text);
-        if (serial >= 20000 && serial <= 60000) {
-          const date = new Date(Date.UTC(1899, 11, 30));
-          date.setUTCDate(date.getUTCDate() + serial);
-          return date;
-        }
-      }
+      const date = new Date(normalized);
+      if (!isNaN(date.getTime())) return date;
 
-      const date = new Date(text);
-      return isNaN(date.getTime()) ? null : date;
+      return null;
     }
 
     function formatDate(date) {
@@ -1926,12 +1963,12 @@
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
+        .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
 
     function sleep(ms) {
-      return new Promise(function(resolve) {
+      return new Promise(function (resolve) {
         setTimeout(resolve, ms);
       });
     }
@@ -1955,7 +1992,7 @@
       toast.textContent = message;
       toast.style.display = "block";
 
-      setTimeout(function() {
+      setTimeout(function () {
         toast.style.display = "none";
       }, 3500);
     }
@@ -1996,13 +2033,13 @@
 
       function escapeCSV(value) {
         let text = String(value ?? "");
-        return /[;\"\r\n]/.test(text) ? '\"' + text.replace(/\"/g, '\"\"') + '\"' : text;
+        return /[;\"\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
       }
 
       return "\uFEFF" +
         headers.join(";") + "\r\n" +
-        rows.map(function(row) {
-          return headers.map(function(header) {
+        rows.map(function (row) {
+          return headers.map(function (header) {
             return escapeCSV(row[header]);
           }).join(";");
         }).join("\r\n");
@@ -2077,7 +2114,7 @@
           storage: "IndexedDB",
           backupDate: new Date().toISOString(),
           totalData: records.length,
-          data: records.map(function(item) {
+          data: records.map(function (item) {
             const clone = Object.assign({}, item);
             delete clone._id;
             return clone;
@@ -2113,7 +2150,7 @@
         }
 
         const now = new Date().toISOString();
-        const records = raw.data.map(function(row) {
+        const records = raw.data.map(function (row) {
           return normalizeRow(row, row.UPLOAD_DATE || now);
         });
 
@@ -2172,16 +2209,16 @@
       anchor.click();
       anchor.remove();
 
-      setTimeout(function() {
+      setTimeout(function () {
         URL.revokeObjectURL(url);
       }, 100);
     }
 
-    document.getElementById("password").addEventListener("keydown", function(e) {
+    document.getElementById("password").addEventListener("keydown", function (e) {
       if (e.key === "Enter") login();
     });
 
-    (async function() {
+    (async function () {
       try {
         await openDatabase();
         await loadData();
