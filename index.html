@@ -231,8 +231,13 @@
       gap: 12px;
     }
 
+    .search-box {
+      position: relative;
+    }
+
     .filter-grid input,
-    .filter-grid select {
+    .filter-grid select,
+    .multi-filter {
       width: 100%;
       padding: 11px 13px;
       border: 1px solid #cbd5e1;
@@ -240,8 +245,85 @@
       outline: none;
     }
 
+    .multi-filter {
+      position: relative;
+      padding: 0;
+      background: #fff;
+    }
+
+    .multi-filter-button {
+      width: 100%;
+      border: 0;
+      padding: 11px 13px;
+      background: transparent;
+      color: #1f2937;
+      text-align: left;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .multi-filter-options {
+      position: absolute;
+      top: calc(100% + 5px);
+      left: -1px;
+      right: -1px;
+      z-index: 20;
+      display: none;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 8px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(15,23,42,.15);
+    }
+
+    .multi-filter.open .multi-filter-options { display: grid; gap: 4px; }
+
+    .multi-filter-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .multi-filter-option:hover { background: #f1f5f9; }
+
     .filter-grid input:focus,
     .filter-grid select:focus { border-color: #2563eb; }
+
+    .search-suggestions {
+      position: absolute;
+      top: calc(100% + 5px);
+      left: 0;
+      right: 0;
+      z-index: 30;
+      display: none;
+      max-height: 280px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(15,23,42,.15);
+    }
+
+    .search-suggestion {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      border: 0;
+      border-bottom: 1px solid #f1f5f9;
+      background: #fff;
+      color: #1f2937;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .search-suggestion:hover { background: #eff6ff; }
+    .search-suggestion strong { display: block; font-size: 13px; }
+    .search-suggestion small { color: #64748b; font-size: 11px; }
 
     .reset-filter-btn {
       width: 100%;
@@ -607,25 +689,38 @@
 
       <div class="filter-panel">
         <div class="filter-grid">
-          <input type="text" id="searchInput" placeholder="🔎 Cari PLU / nama barang / PO Number / keterangan..." oninput="renderDashboard()" />
+          <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔎 Cari PLU / nama barang / PO Number / keterangan..." oninput="handleSearchInput()" onfocus="showSearchSuggestions()" />
+            <div id="searchSuggestions" class="search-suggestions"></div>
+          </div>
 
           <select id="supplierFilter" onchange="applyFilters()">
-            <option value="">All Supplier</option>
+            <option value="">Supplier</option>
           </select>
 
           <select id="dcNameFilter" onchange="applyFilters()">
-            <option value="">All DC Name</option>
+            <option value="">DC Name</option>
           </select>
 
-          <select id="statusFilter" onchange="renderDashboard()">
-            <option value="">All Status</option>
+          <div class="multi-filter" id="yearFilter">
+            <button class="multi-filter-button" type="button" onclick="toggleFilter('yearFilter')">Tahun</button>
+            <div class="multi-filter-options"></div>
+          </div>
+
+          <div class="multi-filter" id="monthFilter">
+            <button class="multi-filter-button" type="button" onclick="toggleFilter('monthFilter')">Bulan</button>
+            <div class="multi-filter-options"></div>
+          </div>
+
+          <select id="statusFilter" onchange="applyFilters()">
+            <option value="">Status</option>
             <option value="PO OUTSTANDING">PO OUTSTANDING</option>
             <option value="PO EXPIRED">PO EXPIRED</option>
             <option value="COMPLETE">COMPLETE</option>
           </select>
 
           <select id="stockConditionFilter" onchange="applyFilters()">
-            <option value="">All Kondisi</option>
+            <option value="">Kondisi</option>
             <option value="kosong">Barang Kosong</option>
             <option value="aman">Barang Aman</option>
           </select>
@@ -969,6 +1064,8 @@
 
       const supplierFilter = document.getElementById("supplierFilter");
       supplierFilter.style.display = currentRole === "supplier" ? "none" : "";
+      loadYearFilter();
+      loadMonthFilter();
       loadSupplierFilter();
       loadDCNameFilter();
       renderDashboard();
@@ -985,30 +1082,174 @@
       document.getElementById("password").value = "";
     }
 
+    function matchesFilters(item, excludedFilter) {
+      if (currentRole === "supplier" &&
+        normalizeSupplierCode(item.SUPPLIER_CODE) !== normalizeSupplierCode(currentUser)) {
+        return false;
+      }
+
+      if (excludedFilter !== "supplierFilter" && currentRole === "admin") {
+        const supplier = normalizeSupplierCode(document.getElementById("supplierFilter").value);
+        if (supplier && normalizeSupplierCode(item.SUPPLIER_CODE) !== supplier) return false;
+      }
+
+      if (excludedFilter !== "dcNameFilter") {
+        const dcName = document.getElementById("dcNameFilter").value;
+        if (dcName && normalizeSearchText(item.DC_NAME) !== dcName) return false;
+      }
+
+      const date = getServiceLevelDate(item);
+      if (excludedFilter !== "yearFilter") {
+        const years = getFilterValues("yearFilter");
+        if (years.length && (!date || !years.includes(String(date.getFullYear())))) return false;
+      }
+
+      if (excludedFilter !== "monthFilter") {
+        const months = getFilterValues("monthFilter");
+        if (months.length && (!date || !months.includes(String(date.getMonth() + 1)))) return false;
+      }
+
+      if (excludedFilter !== "searchInput") {
+        const q = normalizeSearchText(document.getElementById("searchInput").value);
+        if (q) {
+          const haystack = [
+            item.SUPPLIER_CODE,
+            item.SUPPLIER_NAME,
+            item.PLU,
+            item.PLU_DESC,
+            item.PO_NUMBER,
+            item.KETERANGAN,
+            item.STATUS
+          ].map(normalizeSearchText).join(" ");
+
+          if (!haystack.includes(q)) return false;
+        }
+      }
+
+      if (excludedFilter !== "statusFilter") {
+        const status = normalizeStatus(document.getElementById("statusFilter").value);
+        if (status && normalizeStatus(getEffectiveStatus(item)) !== status) return false;
+      }
+
+      if (excludedFilter !== "stockConditionFilter") {
+        const stockCondition = document.getElementById("stockConditionFilter").value;
+        if (stockCondition) {
+          const isEmpty = parseNumber(item.DSI_STOCK) < 1;
+          if (stockCondition !== (isEmpty ? "kosong" : "aman")) return false;
+        }
+      }
+
+      return true;
+    }
+
+    function getRowsForFilter(excludedFilter) {
+      return data.filter(function(item) {
+        return matchesFilters(item, excludedFilter);
+      });
+    }
+
+    function getFilterValues(id) {
+      return Array.from(document.querySelectorAll("#" + id + " input[type=checkbox]:checked"))
+        .map(function(input) { return input.value; });
+    }
+
+    function updateFilterButton(id) {
+      const filter = document.getElementById(id);
+      const button = filter.querySelector(".multi-filter-button");
+      const count = getFilterValues(id).length;
+      const labels = {
+        supplierFilter: "Supplier",
+        dcNameFilter: "DC Name",
+        yearFilter: "Tahun",
+        monthFilter: "Bulan",
+        statusFilter: "Status",
+        stockConditionFilter: "Kondisi"
+      };
+      button.textContent = labels[id] + (count ? " (" + count + " dipilih)" : "");
+    }
+
+    function toggleFilter(id) {
+      document.querySelectorAll(".multi-filter.open").forEach(function(filter) {
+        if (filter.id !== id) filter.classList.remove("open");
+      });
+      document.getElementById(id).classList.toggle("open");
+    }
+
+    function setFilterOptions(select, firstOption, options, selectedValues) {
+      const optionsContainer = select.querySelector(".multi-filter-options");
+      const values = new Set(selectedValues || []);
+      optionsContainer.innerHTML = options.map(function(option) {
+        const checked = values.has(option.value) ? " checked" : "";
+        return '<label class="multi-filter-option"><input type="checkbox" value="' +
+          safe(option.value) + '"' + checked + ' onchange="applyFilters()">' +
+          safe(option.label) + '</label>';
+      }).join("");
+      updateFilterButton(select.id);
+    }
+
+    function loadYearFilter() {
+      const sel = document.getElementById("yearFilter");
+      const selectedYear = getFilterValues("yearFilter");
+      const years = new Set();
+
+      getRowsForFilter("yearFilter").forEach(function(item) {
+        const date = getServiceLevelDate(item);
+        if (date) years.add(String(date.getFullYear()));
+      });
+
+      const options = Array.from(years)
+        .sort(function(a, b) { return Number(b) - Number(a); })
+        .map(function(year) {
+          return { value: year, label: year };
+        });
+
+      setFilterOptions(sel, "Tahun", options, selectedYear);
+    }
+
+    function loadMonthFilter() {
+      const sel = document.getElementById("monthFilter");
+      const selectedMonth = getFilterValues("monthFilter");
+      const monthNames = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+      ];
+      const months = new Set();
+
+      getRowsForFilter("monthFilter").forEach(function(item) {
+        const date = getServiceLevelDate(item);
+        if (date) months.add(date.getMonth() + 1);
+      });
+
+      const options = Array.from(months)
+        .sort(function(a, b) { return a - b; })
+        .map(function(month) {
+          return { value: String(month), label: monthNames[month - 1] };
+        });
+
+      setFilterOptions(sel, "Bulan", options, selectedMonth);
+    }
+
     function loadSupplierFilter() {
       const sel = document.getElementById("supplierFilter");
-      const selectedDC = document.getElementById("dcNameFilter").value;
       const selectedSupplier = sel.value;
-      sel.innerHTML = '<option value="">All Supplier</option>';
 
       if (currentRole === "supplier") {
         sel.style.display = "none";
         sel.disabled = true;
-        sel.value = "";
+        sel.innerHTML = '<option value="">Supplier</option>';
         return;
       }
 
       const map = new Map();
 
-      data.forEach(function(item) {
-        if (selectedDC && normalizeSearchText(item.DC_NAME) !== selectedDC) return;
-
+      getRowsForFilter("supplierFilter").forEach(function(item) {
         const code = normalizeSupplierCode(item.SUPPLIER_CODE);
         const name = String(item.SUPPLIER_NAME || "").trim();
 
         if (code) map.set(code, name);
       });
 
+      sel.innerHTML = '<option value="">Supplier</option>';
       Array.from(map.entries())
         .sort(function(a, b) {
           return a[1].localeCompare(b[1], "id", {
@@ -1037,17 +1278,14 @@
       const selectedDC = sel.value;
       const names = new Map();
 
-      data.forEach(function(item) {
-        if (selectedSupplier && normalizeSupplierCode(item.SUPPLIER_CODE) !== selectedSupplier) return;
-
+      getRowsForFilter("dcNameFilter").forEach(function(item) {
         const name = String(item.DC_NAME || "").trim();
         const normalized = normalizeSearchText(name);
 
         if (normalized && !names.has(normalized)) names.set(normalized, name);
       });
 
-      sel.innerHTML = '<option value="">All DC Name</option>';
-
+      sel.innerHTML = '<option value="">DC Name</option>';
       Array.from(names.values())
         .sort(function(a, b) {
           return a.localeCompare(b, "id", { sensitivity: "base" });
@@ -1065,70 +1303,84 @@
     }
 
     function getFilteredData() {
-      let rows = [...data];
+      return getRowsForFilter("");
+    }
 
-      if (currentRole === "supplier") {
-        const currentSupplierCode = normalizeSupplierCode(currentUser);
-        rows = rows.filter(function(item) {
-          return normalizeSupplierCode(item.SUPPLIER_CODE) === currentSupplierCode;
+    function getSearchSuggestionValues(rows, query) {
+      const values = new Map();
+      const fields = [
+        ["PLU", "PLU"],
+        ["PLU_DESC", "Nama Barang"],
+        ["PO_NUMBER", "PO Number"],
+        ["SUPPLIER_CODE", "Supplier"],
+        ["SUPPLIER_NAME", "Supplier"],
+        ["KETERANGAN", "Keterangan"]
+      ];
+
+      rows.forEach(function(row) {
+        fields.forEach(function(field) {
+          const value = String(row[field[0]] || "").trim();
+          const normalized = normalizeSearchText(value);
+          if (!value || !normalized || !normalized.includes(query)) return;
+
+          const key = normalized + "|" + field[1];
+          if (!values.has(key)) values.set(key, { value: value, type: field[1] });
         });
+      });
+
+      return Array.from(values.values())
+        .sort(function(a, b) {
+          return a.value.localeCompare(b.value, "id", { sensitivity: "base" });
+        })
+        .slice(0, 12);
+    }
+
+    function showSearchSuggestions() {
+      const input = document.getElementById("searchInput");
+      const container = document.getElementById("searchSuggestions");
+      const query = normalizeSearchText(input.value);
+
+      if (!query) {
+        container.innerHTML = "";
+        container.style.display = "none";
+        return;
       }
 
-      if (currentRole === "admin") {
-        const supplier = normalizeSupplierCode(document.getElementById("supplierFilter").value);
-        if (supplier) {
-          rows = rows.filter(function(item) {
-            return normalizeSupplierCode(item.SUPPLIER_CODE) === supplier;
-          });
-        }
-      }
+      const suggestions = getSearchSuggestionValues(getRowsForFilter("searchInput"), query);
+      container.innerHTML = "";
 
-      const dcName = document.getElementById("dcNameFilter").value;
-      if (dcName) {
-        rows = rows.filter(function(item) {
-          return normalizeSearchText(item.DC_NAME) === dcName;
+      suggestions.forEach(function(suggestion) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "search-suggestion";
+        button.dataset.value = suggestion.value;
+        button.innerHTML = "<strong></strong><small></small>";
+        button.querySelector("strong").textContent = suggestion.value;
+        button.querySelector("small").textContent = suggestion.type;
+        button.addEventListener("mousedown", function(event) {
+          event.preventDefault();
+          selectSearchSuggestion(event.currentTarget.dataset.value);
         });
-      }
+        container.appendChild(button);
+      });
 
-      const q = normalizeSearchText(document.getElementById("searchInput").value);
-      if (q) {
-        rows = rows.filter(function(item) {
-          const haystack = [
-            item.SUPPLIER_CODE,
-            item.SUPPLIER_NAME,
-            item.PLU,
-            item.PLU_DESC,
-            item.PO_NUMBER,
-            item.KETERANGAN,
-            item.STATUS
-          ].map(normalizeSearchText).join(" ");
+      container.style.display = suggestions.length ? "block" : "none";
+    }
 
-          return haystack.includes(q);
-        });
-      }
+    function handleSearchInput() {
+      applyFilters();
+      showSearchSuggestions();
+    }
 
-      const statusValue = normalizeStatus(document.getElementById("statusFilter").value);
-      if (statusValue) {
-        rows = rows.filter(function(item) {
-          return normalizeStatus(getEffectiveStatus(item)) === statusValue;
-        });
-      }
-
-      const stockCondition = document.getElementById("stockConditionFilter").value;
-      if (stockCondition === "kosong") {
-        rows = rows.filter(function(item) {
-          return parseNumber(item.DSI_STOCK) < 1;
-        });
-      } else if (stockCondition === "aman") {
-        rows = rows.filter(function(item) {
-          return parseNumber(item.DSI_STOCK) >= 1;
-        });
-      }
-
-      return rows;
+    function selectSearchSuggestion(value) {
+      document.getElementById("searchInput").value = value;
+      document.getElementById("searchSuggestions").style.display = "none";
+      applyFilters();
     }
 
     function applyFilters() {
+      loadYearFilter();
+      loadMonthFilter();
       loadSupplierFilter();
       loadDCNameFilter();
       renderDashboard();
@@ -1140,7 +1392,16 @@
       document.getElementById("dcNameFilter").value = "";
       document.getElementById("statusFilter").value = "";
       document.getElementById("stockConditionFilter").value = "";
-      renderDashboard();
+      ["supplierFilter", "dcNameFilter", "yearFilter", "monthFilter", "statusFilter", "stockConditionFilter"]
+        .forEach(function(id) {
+          if (id === "yearFilter" || id === "monthFilter") {
+            document.querySelectorAll("#" + id + " input[type=checkbox]").forEach(function(input) {
+              input.checked = false;
+            });
+            updateFilterButton(id);
+          }
+        });
+      applyFilters();
     }
 
     function validateCSVRows(rows) {
@@ -1793,6 +2054,8 @@
         lastUpdate = now;
         localStorage.setItem("supplierLastUpdate", now);
 
+        loadYearFilter();
+        loadMonthFilter();
         loadSupplierFilter();
         loadDCNameFilter();
         renderDashboard();
@@ -2317,6 +2580,8 @@
         lastUpdate = new Date().toISOString();
         localStorage.setItem("supplierLastUpdate", lastUpdate);
 
+        loadYearFilter();
+        loadMonthFilter();
         loadSupplierFilter();
         loadDCNameFilter();
         renderDashboard();
@@ -2371,6 +2636,12 @@
 
     document.getElementById("password").addEventListener("keydown", function(e) {
       if (e.key === "Enter") login();
+    });
+
+    document.addEventListener("click", function(event) {
+      if (!event.target.closest(".search-box")) {
+        document.getElementById("searchSuggestions").style.display = "none";
+      }
     });
 
     (async function() {
