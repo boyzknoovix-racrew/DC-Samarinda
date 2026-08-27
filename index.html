@@ -598,6 +598,12 @@
             <option value="COMPLETE">COMPLETE</option>
           </select>
 
+          <select id="stockConditionFilter" onchange="applyFilters()">
+            <option value="">Semua Kondisi</option>
+            <option value="kosong">Barang Kosong</option>
+            <option value="aman">Barang Aman</option>
+          </select>
+
           <button class="btn btn-secondary reset-filter-btn" onclick="resetFilters()">Reset Filter</button>
         </div>
       </div>
@@ -966,12 +972,18 @@
         if (code) map.set(code, name);
       });
 
-      Array.from(map.keys()).sort().forEach(function(code) {
-        const option = document.createElement("option");
-        option.value = code;
-        option.textContent = code + " - " + map.get(code);
-        sel.appendChild(option);
-      });
+      Array.from(map.entries())
+        .sort(function(a, b) {
+          return a[1].localeCompare(b[1], "id", {
+            sensitivity: "base"
+          });
+        })
+        .forEach(function([code, name]) {
+          const option = document.createElement("option");
+          option.value = code;
+          option.textContent = name + " - " + code;
+          sel.appendChild(option);
+        });
 
       sel.style.display = "";
       sel.disabled = false;
@@ -1021,13 +1033,29 @@
         });
       }
 
+      const stockCondition = document.getElementById("stockConditionFilter").value;
+      if (stockCondition === "kosong") {
+        rows = rows.filter(function(item) {
+          return parseNumber(item.STOCK_QTY) <= 0;
+        });
+      } else if (stockCondition === "aman") {
+        rows = rows.filter(function(item) {
+          return parseNumber(item.STOCK_QTY) > 0;
+        });
+      }
+
       return rows;
+    }
+
+    function applyFilters() {
+      renderDashboard();
     }
 
     function resetFilters() {
       document.getElementById("searchInput").value = "";
       document.getElementById("supplierFilter").value = "";
       document.getElementById("statusFilter").value = "";
+      document.getElementById("stockConditionFilter").value = "";
       renderDashboard();
     }
 
