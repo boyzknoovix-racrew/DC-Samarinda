@@ -943,6 +943,9 @@
           <select id="emptyItemsSupplierFilter" class="empty-items-search" onchange="renderEmptyItemsTable()">
             <option value="">Supplier</option>
           </select>
+          <select id="emptyItemsDCFilter" class="empty-items-search" onchange="renderEmptyItemsTable()">
+            <option value="">DC Name</option>
+          </select>
           <input type="text" id="emptyItemsSearch" class="empty-items-search"
             placeholder="🔎 Cari PLU / nama barang / supplier..." oninput="renderEmptyItemsTable()" />
           <div class="table-wrapper">
@@ -1496,6 +1499,7 @@
     function resetFilters() {
       document.getElementById("searchInput").value = "";
       document.getElementById("emptyItemsSupplierFilter").value = "";
+      document.getElementById("emptyItemsDCFilter").value = "";
       document.getElementById("emptyItemsSearch").value = "";
       document.getElementById("supplierFilter").value = "";
       document.getElementById("dcNameFilter").value = "";
@@ -1569,17 +1573,21 @@
       const groups = new Map();
       const supplierFilter = document.getElementById("emptyItemsSupplierFilter");
       const selectedSupplier = supplierFilter.value;
+      const dcFilter = document.getElementById("emptyItemsDCFilter");
+      const selectedDC = dcFilter.value;
       const query = normalizeSearchText(document.getElementById("emptyItemsSearch").value);
 
       document.getElementById("emptyStockQtyHeader").style.display =
         currentRole === "admin" ? "" : "none";
 
       loadEmptyItemsSupplierFilter();
+      loadEmptyItemsDCFilter(selectedSupplier);
 
       getFilteredData()
         .filter(function(item) {
           return parseNumber(item.STOCK_QTY) === 0 &&
-            (!selectedSupplier || normalizeSupplierCode(item.SUPPLIER_CODE) === selectedSupplier);
+            (!selectedSupplier || normalizeSupplierCode(item.SUPPLIER_CODE) === selectedSupplier) &&
+            (!selectedDC || normalizeSearchText(item.DC_NAME) === selectedDC);
         })
         .forEach(function(item) {
           const plu = String(item.PLU || "").trim().toUpperCase();
@@ -1637,6 +1645,39 @@
       }).join("");
 
       document.getElementById("emptyItemsCount").textContent = rows.length.toLocaleString("id-ID") + " data";
+    }
+
+    function loadEmptyItemsDCFilter(selectedSupplier) {
+      const sel = document.getElementById("emptyItemsDCFilter");
+      const selectedDC = sel.value;
+      const names = new Map();
+
+      getFilteredData()
+        .filter(function(item) {
+          return parseNumber(item.STOCK_QTY) === 0 &&
+            (!selectedSupplier || normalizeSupplierCode(item.SUPPLIER_CODE) === selectedSupplier);
+        })
+        .forEach(function(item) {
+          const name = String(item.DC_NAME || "").trim();
+          const normalized = normalizeSearchText(name);
+          if (normalized) names.set(normalized, name);
+        });
+
+      sel.innerHTML = '<option value="">DC Name</option>';
+      Array.from(names.entries())
+        .sort(function(a, b) {
+          return a[1].localeCompare(b[1], "id", { sensitivity: "base" });
+        })
+        .forEach(function([value, label]) {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = label;
+          sel.appendChild(option);
+        });
+
+      sel.value = Array.from(sel.options).some(function(option) {
+        return option.value === selectedDC;
+      }) ? selectedDC : "";
     }
 
     function loadEmptyItemsSupplierFilter() {
