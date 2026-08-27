@@ -763,7 +763,7 @@
         </div>
 
         <div class="card card-blue">
-          <div class="card-title">PO OUTSTANDING</div>
+          <div class="card-title">QTY PO OUTSTANDING</div>
           <div class="card-value" id="outstandingPO">0</div>
         </div>
 
@@ -910,6 +910,7 @@
     let lastUpdate = null;
     let monthlySLChart = null;
     let weeklySLChart = null;
+    let searchTimer = null;
 
     function normalizeSupplierCode(value) {
       return String(value ?? "").trim().toUpperCase();
@@ -1134,7 +1135,7 @@
       if (excludedFilter !== "stockConditionFilter") {
         const stockCondition = document.getElementById("stockConditionFilter").value;
         if (stockCondition) {
-          const isEmpty = parseNumber(item.DSI_STOCK) < 1;
+          const isEmpty = parseNumber(item.STOCK_QTY) === 0;
           if (stockCondition !== (isEmpty ? "kosong" : "aman")) return false;
         }
       }
@@ -1150,7 +1151,8 @@
 
     function getFilterValues(id) {
       return Array.from(document.querySelectorAll("#" + id + " input[type=checkbox]:checked"))
-        .map(function(input) { return input.value; });
+        .map(function(input) { return input.value; })
+        .filter(Boolean);
     }
 
     function updateFilterButton(id) {
@@ -1180,10 +1182,16 @@
       const values = new Set(selectedValues || []);
       optionsContainer.innerHTML = options.map(function(option) {
         const checked = values.has(option.value) ? " checked" : "";
+        const allOption = option.all ? " data-all-option=\"true\"" : "";
+        const changeHandler = option.all ? "handleAllMonthSelection(this)" : "applyFilters()";
         return '<label class="multi-filter-option"><input type="checkbox" value="' +
-          safe(option.value) + '"' + checked + ' onchange="applyFilters()">' +
+          safe(option.value) + '"' + checked + allOption + ' onchange="' + changeHandler + '">' +
           safe(option.label) + '</label>';
       }).join("");
+      if (!selectedValues.length && options.some(function(option) { return option.all; })) {
+        const allInput = optionsContainer.querySelector("input[data-all-option]");
+        if (allInput) allInput.checked = true;
+      }
       updateFilterButton(select.id);
     }
 
@@ -1225,8 +1233,17 @@
         .map(function(month) {
           return { value: String(month), label: monthNames[month - 1] };
         });
+      options.unshift({ value: "", label: "All Bulan", all: true });
 
       setFilterOptions(sel, "Bulan", options, selectedMonth);
+    }
+
+    function handleAllMonthSelection(input) {
+      if (input.checked) {
+        document.querySelectorAll("#monthFilter input[type=checkbox]:not([data-all-option])")
+          .forEach(function(monthInput) { monthInput.checked = false; });
+      }
+      applyFilters();
     }
 
     function loadSupplierFilter() {
@@ -1368,11 +1385,15 @@
     }
 
     function handleSearchInput() {
-      applyFilters();
-      showSearchSuggestions();
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function() {
+        applyFilters();
+        showSearchSuggestions();
+      }, 250);
     }
 
     function selectSearchSuggestion(value) {
+      clearTimeout(searchTimer);
       document.getElementById("searchInput").value = value;
       document.getElementById("searchSuggestions").style.display = "none";
       applyFilters();
@@ -1489,9 +1510,11 @@
       const uniquePLU = getUniquePLU(rows);
       const emptyPLU = getUniqueEmptyStockPLU(rows);
 
-      const outstanding = rows.filter(function(item) {
-        return normalizeStatus(item.STATUS).includes("OUTSTANDING");
-      }).length;
+      const outstanding = rows.reduce(function(total, item) {
+        return normalizeStatus(item.STATUS).includes("OUTSTANDING")
+          ? total + parseNumber(item.PO_QTY)
+          : total;
+      }, 0);
 
       const expired = rows.filter(function(item) {
         return normalizeStatus(item.STATUS).includes("EXPIRED");
