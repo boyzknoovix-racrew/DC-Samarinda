@@ -539,14 +539,6 @@
       </div>
 
       <div class="form-group">
-        <label>Login Sebagai</label>
-        <select id="loginType">
-          <option value="admin">ADMIN</option>
-          <option value="supplier">SUPPLIER</option>
-        </select>
-      </div>
-
-      <div class="form-group">
         <label>Username / Supplier Code</label>
         <input type="text" id="username" placeholder="Masukkan username" />
       </div>
@@ -756,7 +748,7 @@
 
       <div class="table-panel">
         <div class="table-header">
-          <h3>📦 Detail Data Supplier</h3>
+          <h3>📦 Detail PO, BTB, Service Level,  DSI Stock DC dan Keterangan/Feedback Supplier (Barang Kosong)</h3>
           <span id="rowCount">0 data</span>
         </div>
 
@@ -779,7 +771,7 @@
                 <th>BTB VALUE</th>
                 <th>BTB DATE</th>
                 <th>SERVICE LEVEL</th>
-                <th>STOCK QTY</th>
+                <th id="stockQtyHeader">STOCK QTY</th>
                 <th>DSI STOCK</th>
                 <th>LAST DELIVERY</th>
                 <th>STATUS</th>
@@ -932,7 +924,6 @@
     }
 
     async function login() {
-      const type = document.getElementById("loginType").value;
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
       const error = document.getElementById("loginError");
@@ -940,29 +931,27 @@
 
       const normalizedUsername = normalizeSupplierCode(username);
 
-      if (type === "admin" && username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
         currentUser = username;
         currentRole = "admin";
         await openApplication();
         return;
       }
 
-      if (type === "supplier") {
-        const supplier = data.find(function(item) {
-          const code = normalizeSupplierCode(item.SUPPLIER_CODE);
-          return code === normalizedUsername;
-        });
+      const supplier = data.find(function(item) {
+        const code = normalizeSupplierCode(item.SUPPLIER_CODE);
+        return code === normalizedUsername;
+      });
 
-        if (supplier) {
-          const supplierPassword = String(supplier.SUPPLIER_PASSWORD || "").trim();
-          const validPassword = password === DEFAULT_SUPPLIER_PASSWORD || password === supplierPassword;
+      if (supplier) {
+        const supplierPassword = String(supplier.SUPPLIER_PASSWORD || "").trim();
+        const validPassword = password === DEFAULT_SUPPLIER_PASSWORD || password === supplierPassword;
 
-          if (validPassword) {
-            currentUser = normalizeSupplierCode(supplier.SUPPLIER_CODE);
-            currentRole = "supplier";
-            await openApplication();
-            return;
-          }
+        if (validPassword) {
+          currentUser = normalizeSupplierCode(supplier.SUPPLIER_CODE);
+          currentRole = "supplier";
+          await openApplication();
+          return;
         }
       }
 
@@ -1575,6 +1564,8 @@
     function renderTablePage() {
       const tbody = document.getElementById("dataTable");
       tbody.innerHTML = "";
+      document.getElementById("stockQtyHeader").style.display =
+        currentRole === "admin" ? "" : "none";
 
       totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
       if (currentPage > totalPages) currentPage = totalPages;
@@ -1610,9 +1601,11 @@
             : '<span class="status ' + sc + '">' + safe(status || "") + '</span>';
 
         const ket =
-          currentRole === "admin"
+          currentRole === "admin" || currentRole === "supplier"
             ? '<input class="keterangan-input" value="' + safe(item.KETERANGAN || "") + '" onchange="updateKeterangan(' + item._id + ',this.value)" placeholder="Keterangan...">'
             : '<span class="keterangan-readonly">' + safe(item.KETERANGAN || "") + '</span>';
+
+        const stockCell = currentRole === "admin" ? '<td>' + stockHTML + '</td>' : "";
 
         tr.innerHTML =
           '<td>' + safe(item.SUPPLIER_CODE) + '</td>' +
@@ -1630,7 +1623,7 @@
           '<td>' + formatRupiah(parseNumber(item.BTB_VALUE)) + '</td>' +
           '<td>' + safe(item.BTB_DATE) + '</td>' +
           '<td>' + formatPercent(item.SL_VALUE) + '</td>' +
-          '<td>' + stockHTML + '</td>' +
+          stockCell +
           '<td>' + formatNumber(item.DSI_STOCK) + '</td>' +
           '<td>' + safe(item.LAST_DELIVERY_DATE || item.BTB_DATE) + '</td>' +
           '<td>' + statusHTML + '</td>' +
@@ -1721,15 +1714,29 @@
     }
 
     async function updateKeterangan(id, value) {
-      if (currentRole !== "admin") {
+      const record = data.find(function(item) { return item._id === id; });
+      const isOwnSupplierRecord = currentRole === "supplier" && record &&
+        normalizeSupplierCode(record.SUPPLIER_CODE) === normalizeSupplierCode(currentUser);
+
+      if (currentRole !== "admin" && !isOwnSupplierRecord) {
         renderTablePage();
         return;
       }
 
       try {
+        const now = new Date();
+        const date = String(now.getDate()).padStart(2, "0") + "/" +
+          String(now.getMonth() + 1).padStart(2, "0") + "/" +
+          String(now.getFullYear()).slice(-2);
+        const editor = currentRole === "admin" ? "Admin: " + currentUser : "Supplier: " + currentUser;
+        const note = String(value || "").trim();
+        const formattedValue = note
+          ? note + " | Edit: " + date + " oleh " + editor
+          : "Edit: " + date + " oleh " + editor;
+
         await updateRecord(id, {
-          KETERANGAN: String(value || "").trim(),
-          UPDATE_DATE: new Date().toISOString()
+          KETERANGAN: formattedValue,
+          UPDATE_DATE: now.toISOString()
         });
 
         showToast("Keterangan berhasil disimpan.");
