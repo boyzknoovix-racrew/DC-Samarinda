@@ -798,6 +798,15 @@
       return String(value ?? "").trim().toUpperCase();
     }
 
+    function normalizeSearchText(value) {
+      return String(value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+    }
+
     function getEffectiveStatus(item) {
       if (!item) return "PO OUTSTANDING";
 
@@ -1009,7 +1018,7 @@
         }
       }
 
-      const q = document.getElementById("searchInput").value.toLowerCase().trim();
+      const q = normalizeSearchText(document.getElementById("searchInput").value);
       if (q) {
         rows = rows.filter(function(item) {
           const haystack = [
@@ -1020,7 +1029,7 @@
             item.PO_NUMBER,
             item.KETERANGAN,
             item.STATUS
-          ].join(" ").toLowerCase();
+          ].map(normalizeSearchText).join(" ");
 
           return haystack.includes(q);
         });
