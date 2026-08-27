@@ -617,11 +617,11 @@
         <div class="filter-grid">
           <input type="text" id="searchInput" placeholder="🔎 Cari PLU / nama barang / PO Number / keterangan..." oninput="renderDashboard()" />
 
-          <select id="supplierFilter" onchange="renderDashboard()">
+          <select id="supplierFilter" onchange="applyFilters()">
             <option value="">All Supplier</option>
           </select>
 
-          <select id="dcNameFilter" onchange="renderDashboard()">
+          <select id="dcNameFilter" onchange="applyFilters()">
             <option value="">All DC Name</option>
           </select>
 
@@ -998,6 +998,8 @@
 
     function loadSupplierFilter() {
       const sel = document.getElementById("supplierFilter");
+      const selectedDC = document.getElementById("dcNameFilter").value;
+      const selectedSupplier = sel.value;
       sel.innerHTML = '<option value="">All Supplier</option>';
 
       if (currentRole === "supplier") {
@@ -1010,6 +1012,8 @@
       const map = new Map();
 
       data.forEach(function(item) {
+        if (selectedDC && normalizeSearchText(item.DC_NAME) !== selectedDC) return;
+
         const code = normalizeSupplierCode(item.SUPPLIER_CODE);
         const name = String(item.SUPPLIER_NAME || "").trim();
 
@@ -1031,14 +1035,22 @@
 
       sel.style.display = "";
       sel.disabled = false;
-      sel.value = "";
+      sel.value = Array.from(sel.options).some(function(option) {
+        return option.value === selectedSupplier;
+      }) ? selectedSupplier : "";
     }
 
     function loadDCNameFilter() {
       const sel = document.getElementById("dcNameFilter");
+      const selectedSupplier = currentRole === "supplier"
+        ? normalizeSupplierCode(currentUser)
+        : normalizeSupplierCode(document.getElementById("supplierFilter").value);
+      const selectedDC = sel.value;
       const names = new Map();
 
       data.forEach(function(item) {
+        if (selectedSupplier && normalizeSupplierCode(item.SUPPLIER_CODE) !== selectedSupplier) return;
+
         const name = String(item.DC_NAME || "").trim();
         const normalized = normalizeSearchText(name);
 
@@ -1058,7 +1070,9 @@
           sel.appendChild(option);
         });
 
-      sel.value = "";
+      sel.value = Array.from(sel.options).some(function(option) {
+        return option.value === selectedDC;
+      }) ? selectedDC : "";
     }
 
     function getFilteredData() {
@@ -1126,6 +1140,8 @@
     }
 
     function applyFilters() {
+      loadSupplierFilter();
+      loadDCNameFilter();
       renderDashboard();
     }
 
