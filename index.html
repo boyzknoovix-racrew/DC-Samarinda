@@ -330,6 +330,47 @@
       min-width: 120px;
     }
 
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tab-button {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: #fff;
+      color: #475569;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .tab-button.active {
+      border-color: #2563eb;
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .empty-items-table {
+      width: 100%;
+      min-width: 650px;
+    }
+
+    .empty-items-search {
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 11px 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    .empty-items-search:focus { border-color: #2563eb; }
+
     .cards {
       display: grid;
       grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -655,6 +696,12 @@
     </header>
 
     <main class="container">
+      <div class="tab-bar">
+        <button class="tab-button active" id="dashboardTabButton" type="button" onclick="showTab('dashboardTab')">Dashboard</button>
+        <button class="tab-button" id="emptyItemsTabButton" type="button" onclick="showTab('emptyItemsTab')">Daftar Barang Kosong</button>
+      </div>
+
+      <div id="dashboardTab" class="tab-panel active">
       <div id="adminPanel" class="admin-panel" style="display:none">
         <h3>⚙️ ADMIN DATA MANAGEMENT</h3>
 
@@ -883,6 +930,37 @@
           <span id="pageInfo" class="page-info">Halaman 1 / 1</span>
           <button class="btn btn-secondary" id="nextPageBtn" onclick="changePage(currentPage+1)">Berikutnya ▶</button>
           <button class="btn btn-secondary" id="lastPageBtn" onclick="changePage(totalPages)">Terakhir ⏭</button>
+        </div>
+      </div>
+      </div>
+
+      <div id="emptyItemsTab" class="tab-panel">
+        <div class="table-panel">
+          <div class="table-header">
+            <h3>📋 Daftar Barang Kosong</h3>
+            <span id="emptyItemsCount">0 data</span>
+          </div>
+          <select id="emptyItemsSupplierFilter" class="empty-items-search" onchange="renderEmptyItemsTable()">
+            <option value="">Supplier</option>
+          </select>
+          <input type="text" id="emptyItemsSearch" class="empty-items-search"
+            placeholder="🔎 Cari PLU / nama barang / supplier..." oninput="renderEmptyItemsTable()" />
+          <div class="table-wrapper">
+            <table class="empty-items-table">
+              <thead>
+                <tr>
+                  <th>PLU</th>
+                  <th>PLU DESC</th>
+                  <th id="emptyStockQtyHeader">QTY STOCK</th>
+                  <th>DSI STOCK</th>
+                  <th>LAST DELIVERY</th>
+                  <th>LAMA TIDAK ADA KIRIMAN</th>
+                  <th>KETERANGAN / FEEDBACK SUPPLIER</th>
+                </tr>
+              </thead>
+              <tbody id="emptyItemsTable"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </main>
@@ -1417,6 +1495,8 @@
 
     function resetFilters() {
       document.getElementById("searchInput").value = "";
+      document.getElementById("emptyItemsSupplierFilter").value = "";
+      document.getElementById("emptyItemsSearch").value = "";
       document.getElementById("supplierFilter").value = "";
       document.getElementById("dcNameFilter").value = "";
       document.getElementById("statusFilter").value = "";
@@ -1470,6 +1550,127 @@
       renderTablePage();
       updateInfo();
       renderServiceLevelCharts(filteredData);
+      renderEmptyItemsTable();
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll(".tab-panel").forEach(function(panel) {
+        panel.classList.toggle("active", panel.id === tabId);
+      });
+
+      document.getElementById("dashboardTabButton").classList.toggle("active", tabId === "dashboardTab");
+      document.getElementById("emptyItemsTabButton").classList.toggle("active", tabId === "emptyItemsTab");
+
+      if (tabId === "emptyItemsTab") renderEmptyItemsTable();
+    }
+
+    function renderEmptyItemsTable() {
+      const tbody = document.getElementById("emptyItemsTable");
+      const groups = new Map();
+      const supplierFilter = document.getElementById("emptyItemsSupplierFilter");
+      const selectedSupplier = supplierFilter.value;
+      const query = normalizeSearchText(document.getElementById("emptyItemsSearch").value);
+
+      document.getElementById("emptyStockQtyHeader").style.display =
+        currentRole === "admin" ? "" : "none";
+
+      loadEmptyItemsSupplierFilter();
+
+      getFilteredData()
+        .filter(function(item) {
+          return parseNumber(item.STOCK_QTY) === 0 &&
+            (!selectedSupplier || normalizeSupplierCode(item.SUPPLIER_CODE) === selectedSupplier);
+        })
+        .forEach(function(item) {
+          const plu = String(item.PLU || "").trim().toUpperCase();
+          if (!plu) return;
+
+          const searchText = normalizeSearchText([
+            item.PLU,
+            item.PLU_DESC,
+            item.SUPPLIER_CODE,
+            item.SUPPLIER_NAME
+          ].join(" "));
+          if (query && !searchText.includes(query)) return;
+
+          const dateValues = [item.LAST_DELIVERY_DATE, item.BTB_DATE];
+          const latestDelivery = dateValues.reduce(function(latest, value) {
+            const date = parseDate(value);
+            return date && (!latest || date > latest) ? date : latest;
+          }, null);
+          const existing = groups.get(plu);
+
+          if (!existing || (latestDelivery && (!existing.lastDelivery || latestDelivery > existing.lastDelivery))) {
+            groups.set(plu, {
+              plu: plu,
+              description: String(item.PLU_DESC || "").trim(),
+              stockQty: item.STOCK_QTY,
+              dsiStock: item.DSI_STOCK,
+              lastDelivery: latestDelivery,
+              recordId: item._id,
+              feedback: ""
+            });
+          }
+        });
+
+      const rows = Array.from(groups.values()).sort(function(a, b) {
+        if (!a.lastDelivery && b.lastDelivery) return -1;
+        if (a.lastDelivery && !b.lastDelivery) return 1;
+        if (a.lastDelivery && b.lastDelivery) return a.lastDelivery - b.lastDelivery;
+        return a.plu.localeCompare(b.plu, "id", { sensitivity: "base" });
+      });
+
+      tbody.innerHTML = rows.map(function(row) {
+        const days = row.lastDelivery
+          ? Math.max(0, Math.floor((Date.now() - row.lastDelivery.getTime()) / 86400000))
+          : null;
+        return "<tr>" +
+          "<td>" + safe(row.plu) + "</td>" +
+          "<td>" + safe(row.description || "-") + "</td>" +
+          (currentRole === "admin" ? "<td>" + formatNumber(row.stockQty) + "</td>" : "") +
+          "<td>" + formatNumber(row.dsiStock) + "</td>" +
+          "<td>" + safe(row.lastDelivery ? formatDate(row.lastDelivery) : "Belum pernah") + "</td>" +
+          "<td>" + (days === null ? "Belum pernah" : days + " hari") + "</td>" +
+          "<td><input class=\"keterangan-input\" value=\"" + safe(row.feedback) +
+          "\" onchange=\"updateKeterangan(" + row.recordId + ",this.value)\" placeholder=\"Keterangan...\"></td>" +
+          "</tr>";
+      }).join("");
+
+      document.getElementById("emptyItemsCount").textContent = rows.length.toLocaleString("id-ID") + " data";
+    }
+
+    function loadEmptyItemsSupplierFilter() {
+      const sel = document.getElementById("emptyItemsSupplierFilter");
+      const selectedSupplier = sel.value;
+      const suppliers = new Map();
+
+      if (currentRole === "supplier") {
+        sel.style.display = "none";
+        sel.value = "";
+        return;
+      }
+
+      data.forEach(function(item) {
+        const code = normalizeSupplierCode(item.SUPPLIER_CODE);
+        if (code) suppliers.set(code, String(item.SUPPLIER_NAME || "").trim());
+      });
+
+      sel.innerHTML = '<option value="">Supplier</option>';
+      Array.from(suppliers.entries())
+        .sort(function(a, b) {
+          return a[1].localeCompare(b[1], "id", { sensitivity: "base" });
+        })
+        .forEach(function([code, name]) {
+          const option = document.createElement("option");
+          option.value = code;
+          option.textContent = name + " - " + code;
+          sel.appendChild(option);
+        });
+
+      sel.style.display = "";
+      sel.value = Array.from(sel.options).some(function(option) {
+        return option.value === selectedSupplier;
+      }) ? selectedSupplier : "";
     }
 
     function getUniquePLU(rows) {
@@ -1893,7 +2094,7 @@
             : '<span class="status ' + sc + '">' + safe(status || "") + '</span>';
 
         const ket =
-          currentRole === "admin" || currentRole === "supplier"
+          currentRole === "admin"
             ? '<input class="keterangan-input" value="' + safe(item.KETERANGAN || "") + '" onchange="updateKeterangan(' + item._id + ',this.value)" placeholder="Keterangan...">'
             : '<span class="keterangan-readonly">' + safe(item.KETERANGAN || "") + '</span>';
 
@@ -2031,6 +2232,7 @@
           UPDATE_DATE: now.toISOString()
         });
 
+        renderEmptyItemsTable();
         showToast("Keterangan berhasil disimpan.");
       } catch (e) {
         console.error(e);
