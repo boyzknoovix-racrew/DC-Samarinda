@@ -481,8 +481,8 @@
     }
 
     @media (max-width: 1100px) {
-      .cards { grid-template-columns: repeat(3,1fr); }
-      .info-grid { grid-template-columns: repeat(2,1fr); }
+      .cards { grid-template-columns: repeat(3, 1fr); }
+      .info-grid { grid-template-columns: repeat(2, 1fr); }
       .chart-grid { grid-template-columns: 1fr; }
     }
 
@@ -497,7 +497,7 @@
         justify-content: space-between;
       }
 
-      .cards { grid-template-columns: repeat(2,1fr); }
+      .cards { grid-template-columns: repeat(2, 1fr); }
       .filter-grid { grid-template-columns: 1fr; }
       .info-grid { grid-template-columns: 1fr; }
       .chart-container { height: 300px; }
@@ -810,7 +810,7 @@
       return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-        request.onupgradeneeded = function (e) {
+        request.onupgradeneeded = function(e) {
           const database = e.target.result;
           if (!database.objectStoreNames.contains(STORE_NAME)) {
             database.createObjectStore(STORE_NAME, {
@@ -820,12 +820,12 @@
           }
         };
 
-        request.onsuccess = function (e) {
+        request.onsuccess = function(e) {
           db = e.target.result;
           resolve(db);
         };
 
-        request.onerror = function () {
+        request.onerror = function() {
           reject(request.error);
         };
       });
@@ -837,11 +837,11 @@
           .objectStore(STORE_NAME)
           .getAll();
 
-        request.onsuccess = function () {
+        request.onsuccess = function() {
           resolve(request.result || []);
         };
 
-        request.onerror = function () {
+        request.onerror = function() {
           reject(request.error);
         };
       });
@@ -853,8 +853,8 @@
           .objectStore(STORE_NAME)
           .clear();
 
-        request.onsuccess = function () { resolve(); };
-        request.onerror = function () { reject(request.error); };
+        request.onsuccess = function() { resolve(); };
+        request.onerror = function() { reject(request.error); };
       });
     }
 
@@ -863,12 +863,12 @@
         const transaction = db.transaction(STORE_NAME, "readwrite");
         const store = transaction.objectStore(STORE_NAME);
 
-        records.forEach(function (item) {
+        records.forEach(function(item) {
           store.add(item);
         });
 
-        transaction.oncomplete = function () { resolve(); };
-        transaction.onerror = function () { reject(transaction.error); };
+        transaction.oncomplete = function() { resolve(); };
+        transaction.onerror = function() { reject(transaction.error); };
       });
     }
 
@@ -899,7 +899,7 @@
       }
 
       if (type === "supplier") {
-        const supplier = data.find(function (item) {
+        const supplier = data.find(function(item) {
           const code = normalizeSupplierCode(item.SUPPLIER_CODE);
           return code === normalizedUsername;
         });
@@ -929,6 +929,8 @@
       document.getElementById("adminPanel").style.display =
         currentRole === "admin" ? "block" : "none";
 
+      const supplierFilter = document.getElementById("supplierFilter");
+      supplierFilter.style.display = currentRole === "supplier" ? "none" : "";
       loadSupplierFilter();
       renderDashboard();
     }
@@ -939,6 +941,7 @@
 
       document.getElementById("app").style.display = "none";
       document.getElementById("loginPage").style.display = "flex";
+
       document.getElementById("username").value = "";
       document.getElementById("password").value = "";
     }
@@ -947,29 +950,32 @@
       const sel = document.getElementById("supplierFilter");
       sel.innerHTML = '<option value="">Semua Supplier</option>';
 
+      if (currentRole === "supplier") {
+        sel.style.display = "none";
+        sel.disabled = true;
+        sel.value = "";
+        return;
+      }
+
       const map = new Map();
 
-      data.forEach(function (item) {
+      data.forEach(function(item) {
         const code = normalizeSupplierCode(item.SUPPLIER_CODE);
         const name = String(item.SUPPLIER_NAME || "").trim();
 
         if (code) map.set(code, name);
       });
 
-      Array.from(map.keys()).sort().forEach(function (code) {
+      Array.from(map.keys()).sort().forEach(function(code) {
         const option = document.createElement("option");
         option.value = code;
         option.textContent = code + " - " + map.get(code);
         sel.appendChild(option);
       });
 
-      if (currentRole === "supplier") {
-        const currentSupplierCode = normalizeSupplierCode(currentUser);
-        sel.value = Array.from(map.keys()).includes(currentSupplierCode) ? currentSupplierCode : "";
-        sel.disabled = true;
-      } else {
-        sel.disabled = false;
-      }
+      sel.style.display = "";
+      sel.disabled = false;
+      sel.value = "";
     }
 
     function getFilteredData() {
@@ -977,7 +983,7 @@
 
       if (currentRole === "supplier") {
         const currentSupplierCode = normalizeSupplierCode(currentUser);
-        rows = rows.filter(function (item) {
+        rows = rows.filter(function(item) {
           return normalizeSupplierCode(item.SUPPLIER_CODE) === currentSupplierCode;
         });
       }
@@ -985,7 +991,7 @@
       if (currentRole === "admin") {
         const supplier = normalizeSupplierCode(document.getElementById("supplierFilter").value);
         if (supplier) {
-          rows = rows.filter(function (item) {
+          rows = rows.filter(function(item) {
             return normalizeSupplierCode(item.SUPPLIER_CODE) === supplier;
           });
         }
@@ -993,7 +999,7 @@
 
       const q = document.getElementById("searchInput").value.toLowerCase().trim();
       if (q) {
-        rows = rows.filter(function (item) {
+        rows = rows.filter(function(item) {
           const haystack = [
             item.SUPPLIER_CODE,
             item.SUPPLIER_NAME,
@@ -1010,7 +1016,7 @@
 
       const statusValue = normalizeStatus(document.getElementById("statusFilter").value);
       if (statusValue) {
-        rows = rows.filter(function (item) {
+        rows = rows.filter(function(item) {
           return normalizeStatus(getEffectiveStatus(item)) === statusValue;
         });
       }
@@ -1030,7 +1036,7 @@
         throw new Error("CSV tidak memiliki data.");
       }
 
-      const keys = new Set(Object.keys(rows[0]).map(function (k) {
+      const keys = new Set(Object.keys(rows[0]).map(function(k) {
         return String(k).toUpperCase();
       }));
 
@@ -1043,7 +1049,7 @@
         "SL_VALUE"
       ];
 
-      const missing = required.filter(function (field) {
+      const missing = required.filter(function(field) {
         return !keys.has(field);
       });
 
@@ -1066,20 +1072,27 @@
 
     function getUniquePLU(rows) {
       const set = new Set();
-      rows.forEach(function (item) {
+
+      rows.forEach(function(item) {
         const plu = String(item.PLU || "").trim().toUpperCase();
         if (plu) set.add(plu);
       });
+
       return set;
     }
 
     function getUniqueEmptyStockPLU(rows) {
       const set = new Set();
-      rows.forEach(function (item) {
+
+      rows.forEach(function(item) {
         const plu = String(item.PLU || "").trim().toUpperCase();
         const stock = parseNumber(item.STOCK_QTY);
-        if (plu && stock <= 0) set.add(plu);
+
+        if (plu && stock <= 0) {
+          set.add(plu);
+        }
       });
+
       return set;
     }
 
@@ -1087,14 +1100,14 @@
       let totalPO = 0;
       let totalBTB = 0;
 
-      rows.forEach(function (item) {
+      rows.forEach(function(item) {
         totalPO += parseNumber(item.PO_VALUE);
         totalBTB += parseNumber(item.BTB_VALUE);
       });
 
       if (totalPO <= 0) return 0;
 
-      let result = (totalBTB / totalPO) * 100;
+      let result = ((totalBTB / totalPO) * 100);
       result = Math.max(0, Math.min(100, result));
       return result;
     }
@@ -1103,18 +1116,18 @@
       const uniquePLU = getUniquePLU(rows);
       const emptyPLU = getUniqueEmptyStockPLU(rows);
 
-      const outstanding = rows.filter(function (item) {
+      const outstanding = rows.filter(function(item) {
         return normalizeStatus(item.STATUS).includes("OUTSTANDING");
       }).length;
 
-      const expired = rows.filter(function (item) {
+      const expired = rows.filter(function(item) {
         return normalizeStatus(item.STATUS).includes("EXPIRED");
       }).length;
 
       let totalDSI = 0;
       let dsiCount = 0;
 
-      rows.forEach(function (item) {
+      rows.forEach(function(item) {
         const d = parseNumber(item.DSI_STOCK);
         if (!isNaN(d)) {
           totalDSI += d;
@@ -1136,7 +1149,7 @@
       const ids = ["infoSupplierCode", "infoSupplierName", "infoDCCode", "infoDCName"];
 
       if (!rows.length) {
-        ids.forEach(function (id) {
+        ids.forEach(function(id) {
           document.getElementById(id).textContent = "-";
         });
 
@@ -1161,13 +1174,13 @@
       let totalBTBQty = 0;
       let latest = null;
 
-      rows.forEach(function (item) {
+      rows.forEach(function(item) {
         totalPOValue += parseNumber(item.PO_VALUE);
         totalBTBValue += parseNumber(item.BTB_VALUE);
         totalPOQty += parseNumber(item.PO_QTY);
         totalBTBQty += parseNumber(item.BTB_QTY);
 
-        [item.LAST_DELIVERY_DATE, item.BTB_DATE].forEach(function (value) {
+        [item.LAST_DELIVERY_DATE, item.BTB_DATE].forEach(function(value) {
           const date = parseDate(value);
           if (date && (!latest || date > latest)) latest = date;
         });
@@ -1184,14 +1197,15 @@
       if (!row) return null;
 
       const candidates = [
-        row.BTB_DATE,
-        row.BTBDATE,
         row.PO_DATE,
         row.PODATE,
-        row.LAST_DELIVERY_DATE,
-        row.LASTDELIVERYDATE,
+        row["PO DATE"],
+        row.BTB_DATE,
+        row.BTBDATE,
         row.EXPIRED_DATE,
-        row.EXPIREDDATE
+        row.EXPIREDDATE,
+        row.LAST_DELIVERY_DATE,
+        row.LASTDELIVERYDATE
       ];
 
       for (const value of candidates) {
@@ -1205,7 +1219,7 @@
     function getMonthlyServiceLevel(rows) {
       const map = new Map();
 
-      rows.forEach(function (row) {
+      rows.forEach(function(row) {
         const date = getServiceLevelDate(row);
         if (!date) return;
 
@@ -1225,10 +1239,10 @@
       });
 
       return Array.from(map.values())
-        .sort(function (a, b) {
+        .sort(function(a, b) {
           return a.date - b.date;
         })
-        .map(function (bucket) {
+        .map(function(bucket) {
           const po = bucket.po;
           const btb = bucket.btb;
           const value = po > 0 ? (btb / po) * 100 : 0;
@@ -1254,7 +1268,7 @@
     function getWeeklyServiceLevel(rows) {
       const map = new Map();
 
-      rows.forEach(function (row) {
+      rows.forEach(function(row) {
         const date = getServiceLevelDate(row);
         if (!date) return;
 
@@ -1276,10 +1290,10 @@
       });
 
       return Array.from(map.values())
-        .sort(function (a, b) {
+        .sort(function(a, b) {
           return a.start - b.start;
         })
-        .map(function (bucket) {
+        .map(function(bucket) {
           const po = bucket.po;
           const btb = bucket.btb;
           const value = po > 0 ? (btb / po) * 100 : 0;
@@ -1342,7 +1356,7 @@
             bodyFont: { size: 11 },
             displayColors: false,
             callbacks: {
-              label: function (context) {
+              label: function(context) {
                 const i = context.dataIndex;
                 const source = context.chart.canvas.id === "monthlySLChart" ? monthly[i] : weekly[i];
 
@@ -1363,7 +1377,7 @@
             offset: 5,
             color: "#1e3a8a",
             font: { size: 10, weight: "bold" },
-            formatter: function (value) {
+            formatter: function(value) {
               return value.toFixed(2) + "%";
             }
           }
@@ -1375,7 +1389,7 @@
             beginAtZero: true,
             ticks: {
               stepSize: 20,
-              callback: function (value) { return value + "%"; }
+              callback: function(value) { return value + "%"; }
             },
             grid: { color: "rgba(148,163,184,.15)" },
             border: { display: false }
@@ -1391,10 +1405,10 @@
       monthlySLChart = new Chart(monthlyCtx, {
         type: "line",
         data: {
-          labels: monthly.map(function (x) { return x.label; }),
+          labels: monthly.map(function(x) { return x.label; }),
           datasets: [{
             label: "Service Level Aktual",
-            data: monthly.map(function (x) { return x.value; }),
+            data: monthly.map(function(x) { return x.value; }),
             borderWidth: 3,
             borderColor: "#2563eb",
             backgroundColor: monthlyGradient,
@@ -1414,10 +1428,10 @@
       weeklySLChart = new Chart(weeklyCtx, {
         type: "line",
         data: {
-          labels: weekly.map(function (x) { return x.label; }),
+          labels: weekly.map(function(x) { return x.label; }),
           datasets: [{
             label: "Service Level Aktual",
-            data: weekly.map(function (x) { return x.value; }),
+            data: weekly.map(function(x) { return x.value; }),
             borderWidth: 3,
             borderColor: "#16a34a",
             backgroundColor: weeklyGradient,
@@ -1445,7 +1459,7 @@
       const rows = filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
       const frag = document.createDocumentFragment();
 
-      rows.forEach(function (item) {
+      rows.forEach(function(item) {
         const tr = document.createElement("tr");
         const effective = getEffectiveStatus(item);
         const status = String(item.STATUS || "").trim();
@@ -1524,7 +1538,7 @@
         const store = transaction.objectStore(STORE_NAME);
         const request = store.get(id);
 
-        request.onsuccess = function () {
+        request.onsuccess = function() {
           const record = request.result;
           if (!record) {
             reject(new Error("Data tidak ditemukan"));
@@ -1534,8 +1548,8 @@
           Object.assign(record, changes);
 
           const updateRequest = store.put(record);
-          updateRequest.onsuccess = function () {
-            const index = data.findIndex(function (item) {
+          updateRequest.onsuccess = function() {
+            const index = data.findIndex(function(item) {
               return item._id === id;
             });
 
@@ -1544,12 +1558,12 @@
             resolve();
           };
 
-          updateRequest.onerror = function () {
+          updateRequest.onerror = function() {
             reject(updateRequest.error);
           };
         };
 
-        request.onerror = function () {
+        request.onerror = function() {
           reject(request.error);
         };
       });
@@ -1562,7 +1576,7 @@
         return;
       }
 
-      const record = data.find(function (item) { return item._id === id; });
+      const record = data.find(function(item) { return item._id === id; });
       if (record && parseSL(record.SL_VALUE) >= 95) {
         showToast("SL 95%-100% otomatis COMPLETE.");
         renderDashboard();
@@ -1622,7 +1636,7 @@
         showProgress(25, "Menyiapkan " + rows.length.toLocaleString("id-ID") + " baris data...");
 
         const now = new Date().toISOString();
-        const normalized = rows.map(function (row) {
+        const normalized = rows.map(function(row) {
           return normalizeRow(row, now);
         });
 
@@ -1670,11 +1684,11 @@
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
-        reader.onload = function (e) {
+        reader.onload = function(e) {
           resolve(e.target.result);
         };
 
-        reader.onerror = function () {
+        reader.onerror = function() {
           reject(new Error("File tidak dapat dibaca."));
         };
 
@@ -1717,7 +1731,7 @@
           row.push(value);
           value = "";
 
-          if (row.some(function (cell) {
+          if (row.some(function(cell) {
             return String(cell).trim();
           })) {
             rows.push(row);
@@ -1732,18 +1746,18 @@
 
       if (value !== "" || row.length) {
         row.push(value);
-        if (row.some(function (cell) { return String(cell).trim(); })) rows.push(row);
+        if (row.some(function(cell) { return String(cell).trim(); })) rows.push(row);
       }
 
       if (rows.length < 2) return [];
 
-      const headers = rows[0].map(function (header) {
+      const headers = rows[0].map(function(header) {
         return String(header).replace(/^\uFEFF/, "").trim().toUpperCase();
       });
 
-      return rows.slice(1).map(function (record) {
+      return rows.slice(1).map(function(record) {
         const obj = {};
-        headers.forEach(function (header, index) {
+        headers.forEach(function(header, index) {
           obj[header] = record[index] !== undefined ? String(record[index]).trim() : "";
         });
         return obj;
@@ -1816,34 +1830,34 @@
     }
 
     function normalizeRow(row, now) {
-      const slRaw = getFlexible(row, ["SL_VALUE", "SL VALUE", "SERVICE LEVEL", "SERVICE_LEVEL", "SL"], 0);
+      const slRaw = getFlexible(row, ["SL_VALUE","SL VALUE","SERVICE LEVEL","SERVICE_LEVEL","SL"], 0);
       const sl = parseSL(slRaw);
 
-      let status = String(getFlexible(row, ["STATUS", "STATUS PO"], "")).trim().toUpperCase();
+      let status = String(getFlexible(row, ["STATUS","STATUS PO"], "")).trim().toUpperCase();
       if (sl >= 95) status = "COMPLETE";
 
       return {
-        SUPPLIER_CODE: String(getFlexible(row, ["SUPPLIER_CODE", "SUPPLIER CODE"], "")).trim(),
-        SUPPLIER_NAME: String(getFlexible(row, ["SUPPLIER_NAME", "SUPPLIER NAME"], "")).trim(),
-        SUPPLIER_PASSWORD: String(getFlexible(row, ["SUPPLIER_PASSWORD", "SUPPLIER PASSWORD"], "")).trim(),
+        SUPPLIER_CODE: String(getFlexible(row, ["SUPPLIER_CODE","SUPPLIER CODE"], "")).trim(),
+        SUPPLIER_NAME: String(getFlexible(row, ["SUPPLIER_NAME","SUPPLIER NAME"], "")).trim(),
+        SUPPLIER_PASSWORD: String(getFlexible(row, ["SUPPLIER_PASSWORD","SUPPLIER PASSWORD"], "")).trim(),
         PLU: String(getFlexible(row, ["PLU"], "")).trim(),
-        PLU_DESC: String(getFlexible(row, ["PLU_DESC", "PLU DESC"], "")).trim(),
-        DC_CODE: String(getFlexible(row, ["DC_CODE", "DC CODE"], "")).trim(),
-        DC_NAME: String(getFlexible(row, ["DC_NAME", "DC NAME"], "")).trim(),
-        PO_NUMBER: String(getFlexible(row, ["PO_NUMBER", "PO NUMBER"], "")).trim(),
-        PO_DATE: String(getFlexible(row, ["PO_DATE", "PO DATE"], "")).trim(),
-        EXPIRED_DATE: String(getFlexible(row, ["EXPIRED_DATE", "EXPIRED DATE"], "")).trim(),
-        PO_QTY: getFlexible(row, ["PO_QTY", "PO QTY"], 0),
-        PO_VALUE: getFlexible(row, ["PO_VALUE", "PO VALUE"], 0),
-        BTB_QTY: getFlexible(row, ["BTB_QTY", "BTB QTY"], 0),
-        BTB_VALUE: getFlexible(row, ["BTB_VALUE", "BTB VALUE", "BPB VALUE", "BPB_VALUE"], 0),
-        BTB_DATE: String(getFlexible(row, ["BTB_DATE", "BTB DATE", "BPB DATE", "BPB_DATE"], "")).trim(),
+        PLU_DESC: String(getFlexible(row, ["PLU_DESC","PLU DESC"], "")).trim(),
+        DC_CODE: String(getFlexible(row, ["DC_CODE","DC CODE"], "")).trim(),
+        DC_NAME: String(getFlexible(row, ["DC_NAME","DC NAME"], "")).trim(),
+        PO_NUMBER: String(getFlexible(row, ["PO_NUMBER","PO NUMBER"], "")).trim(),
+        PO_DATE: String(getFlexible(row, ["PO_DATE","PO DATE"], "")).trim(),
+        EXPIRED_DATE: String(getFlexible(row, ["EXPIRED_DATE","EXPIRED DATE"], "")).trim(),
+        PO_QTY: getFlexible(row, ["PO_QTY","PO QTY"], 0),
+        PO_VALUE: getFlexible(row, ["PO_VALUE","PO VALUE"], 0),
+        BTB_QTY: getFlexible(row, ["BTB_QTY","BTB QTY"], 0),
+        BTB_VALUE: getFlexible(row, ["BTB_VALUE","BTB VALUE","BPB VALUE","BPB_VALUE"], 0),
+        BTB_DATE: String(getFlexible(row, ["BTB_DATE","BTB DATE","BPB DATE","BPB_DATE"], "")).trim(),
         SL_VALUE: sl,
-        STOCK_QTY: getFlexible(row, ["STOCK_QTY", "STOCK QTY", "STOCK", "STOCKQUANTITY"], 0),
-        DSI_STOCK: getFlexible(row, ["DSI_STOCK", "DSI STOCK", "DSI", "DSISTOCK"], 0),
-        LAST_DELIVERY_DATE: String(getFlexible(row, ["LAST_DELIVERY_DATE", "LAST DELIVERY DATE", "LAST DELIVERY"], "")).trim(),
+        STOCK_QTY: getFlexible(row, ["STOCK_QTY","STOCK QTY","STOCK","STOCKQUANTITY"], 0),
+        DSI_STOCK: getFlexible(row, ["DSI_STOCK","DSI STOCK","DSI","DSISTOCK"], 0),
+        LAST_DELIVERY_DATE: String(getFlexible(row, ["LAST_DELIVERY_DATE","LAST DELIVERY DATE","LAST DELIVERY"], "")).trim(),
         STATUS: status,
-        KETERANGAN: String(getFlexible(row, ["KETERANGAN", "KETERANGAN SUPPLIER", "REMARK", "REMARKS"], "")).trim(),
+        KETERANGAN: String(getFlexible(row, ["KETERANGAN","KETERANGAN SUPPLIER","REMARK","REMARKS"], "")).trim(),
         UPLOAD_DATE: now,
         UPDATE_DATE: now
       };
@@ -1919,7 +1933,7 @@
         /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/,
         /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+\d{1,2}:\d{2}(:\d{2})?$/,
         /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/,
-        /^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+\d{1,2}:\d{2}(:\d{2})?$/,
+        /^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+\d{1,2}:\d{2}(:\d{2})?$/
       ];
 
       for (const pattern of patterns) {
@@ -1928,18 +1942,26 @@
 
         let day, month, year;
 
-        if (match[1] && Number(match[1]) > 12) {
-          day = Number(match[1]);
-          month = Number(match[2]);
-          year = Number(match[3]);
-        } else if (match[2] && Number(match[2]) > 12) {
-          month = Number(match[1]);
-          day = Number(match[2]);
-          year = Number(match[3]);
+        const a = Number(match[1]);
+        const b = Number(match[2]);
+        const c = Number(match[3]);
+
+        if (String(match[0]).startsWith("20") || String(match[0]).startsWith("19") || String(match[0]).startsWith("18")) {
+          year = c;
+          month = b;
+          day = a;
+        } else if (a > 12 && b <= 12) {
+          day = a;
+          month = b;
+          year = c;
+        } else if (b > 12 && a <= 12) {
+          month = a;
+          day = b;
+          year = c;
         } else {
-          day = Number(match[1]);
-          month = Number(match[2]);
-          year = Number(match[3]);
+          day = a;
+          month = b;
+          year = c;
         }
 
         if (year < 100) year += 2000;
@@ -1968,7 +1990,7 @@
     }
 
     function sleep(ms) {
-      return new Promise(function (resolve) {
+      return new Promise(function(resolve) {
         setTimeout(resolve, ms);
       });
     }
@@ -1992,7 +2014,7 @@
       toast.textContent = message;
       toast.style.display = "block";
 
-      setTimeout(function () {
+      setTimeout(function() {
         toast.style.display = "none";
       }, 3500);
     }
@@ -2038,8 +2060,8 @@
 
       return "\uFEFF" +
         headers.join(";") + "\r\n" +
-        rows.map(function (row) {
-          return headers.map(function (header) {
+        rows.map(function(row) {
+          return headers.map(function(header) {
             return escapeCSV(row[header]);
           }).join(";");
         }).join("\r\n");
@@ -2114,7 +2136,7 @@
           storage: "IndexedDB",
           backupDate: new Date().toISOString(),
           totalData: records.length,
-          data: records.map(function (item) {
+          data: records.map(function(item) {
             const clone = Object.assign({}, item);
             delete clone._id;
             return clone;
@@ -2150,7 +2172,7 @@
         }
 
         const now = new Date().toISOString();
-        const records = raw.data.map(function (row) {
+        const records = raw.data.map(function(row) {
           return normalizeRow(row, row.UPLOAD_DATE || now);
         });
 
@@ -2209,16 +2231,16 @@
       anchor.click();
       anchor.remove();
 
-      setTimeout(function () {
+      setTimeout(function() {
         URL.revokeObjectURL(url);
       }, 100);
     }
 
-    document.getElementById("password").addEventListener("keydown", function (e) {
+    document.getElementById("password").addEventListener("keydown", function(e) {
       if (e.key === "Enter") login();
     });
 
-    (async function () {
+    (async function() {
       try {
         await openDatabase();
         await loadData();
