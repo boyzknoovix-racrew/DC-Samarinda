@@ -1341,12 +1341,20 @@
           if (!value || !normalized || !normalized.includes(query)) return;
 
           const key = normalized + "|" + field[1];
-          if (!values.has(key)) values.set(key, { value: value, type: field[1] });
+          const poDate = parseDate(row.PO_DATE);
+          const existing = values.get(key);
+
+          if (!existing || (poDate && (!existing.poDate || poDate > existing.poDate))) {
+            values.set(key, { value: value, type: field[1], poDate: poDate });
+          }
         });
       });
 
       return Array.from(values.values())
         .sort(function(a, b) {
+          if (a.poDate && b.poDate) return b.poDate - a.poDate;
+          if (a.poDate) return -1;
+          if (b.poDate) return 1;
           return a.value.localeCompare(b.value, "id", { sensitivity: "base" });
         })
         .slice(0, 12);
