@@ -151,11 +151,36 @@
     .chart-panel h3 { margin: 0 0 15px; }
 
     .admin-tools {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
+      position: relative;
+      display: inline-block;
     }
+
+    .admin-menu summary {
+      list-style: none;
+      cursor: pointer;
+    }
+
+    .admin-menu summary::-webkit-details-marker { display: none; }
+
+    .admin-menu[open] summary { background: #1d4ed8; }
+
+    .admin-menu-items {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      z-index: 10;
+      display: grid;
+      min-width: 210px;
+      gap: 8px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(15,23,42,.15);
+    }
+
+    .admin-menu-items .btn,
+    .admin-menu-items .file-label { width: 100%; text-align: left; }
 
     .file-input { display: none; }
 
@@ -560,17 +585,22 @@
         <h3>⚙️ ADMIN DATA MANAGEMENT</h3>
 
         <div class="admin-tools">
-          <label for="csvFile" class="file-label">📤 Upload CSV</label>
-          <input type="file" id="csvFile" class="file-input" accept=".csv,text/csv" onchange="uploadCSV(event)" />
+          <details class="admin-menu">
+            <summary class="btn btn-primary">⚙️ Manajemen Data</summary>
+            <div class="admin-menu-items">
+              <label for="csvFile" class="file-label">📤 Upload CSV</label>
+              <input type="file" id="csvFile" class="file-input" accept=".csv,text/csv" onchange="uploadCSV(event)" />
 
-          <button class="btn btn-info" onclick="downloadCSV()">📥 Download CSV</button>
-          <button class="btn btn-success" onclick="downloadTemplate()">📄 Template CSV</button>
-          <button class="btn btn-info" onclick="backupData()">💾 Backup Data</button>
+              <button class="btn btn-info" onclick="downloadCSV()">📥 Download CSV</button>
+              <button class="btn btn-success" onclick="downloadTemplate()">📄 Template CSV</button>
+              <button class="btn btn-info" onclick="backupData()">💾 Backup Data</button>
 
-          <label for="backupFile" class="btn btn-warning" style="display:inline-block">♻️ Restore Backup</label>
-          <input type="file" id="backupFile" class="file-input" accept=".json" onchange="restoreBackup(event)" />
+              <label for="backupFile" class="btn btn-warning">♻️ Restore Backup</label>
+              <input type="file" id="backupFile" class="file-input" accept=".json" onchange="restoreBackup(event)" />
 
-          <button class="btn btn-danger" onclick="clearAllData()">🗑️ Hapus Semua Data</button>
+              <button class="btn btn-danger" onclick="clearAllData()">🗑️ Hapus Semua Data</button>
+            </div>
+          </details>
         </div>
 
         <div id="progressArea" class="progress-area">
@@ -588,18 +618,22 @@
           <input type="text" id="searchInput" placeholder="🔎 Cari PLU / nama barang / PO Number / keterangan..." oninput="renderDashboard()" />
 
           <select id="supplierFilter" onchange="renderDashboard()">
-            <option value="">Semua Supplier</option>
+            <option value="">All Supplier</option>
+          </select>
+
+          <select id="dcNameFilter" onchange="renderDashboard()">
+            <option value="">All DC Name</option>
           </select>
 
           <select id="statusFilter" onchange="renderDashboard()">
-            <option value="">Semua Status</option>
+            <option value="">All Status</option>
             <option value="PO OUTSTANDING">PO OUTSTANDING</option>
             <option value="PO EXPIRED">PO EXPIRED</option>
             <option value="COMPLETE">COMPLETE</option>
           </select>
 
           <select id="stockConditionFilter" onchange="applyFilters()">
-            <option value="">Semua Kondisi</option>
+            <option value="">All Kondisi</option>
             <option value="kosong">Barang Kosong</option>
             <option value="aman">Barang Aman</option>
           </select>
@@ -947,6 +981,7 @@
       const supplierFilter = document.getElementById("supplierFilter");
       supplierFilter.style.display = currentRole === "supplier" ? "none" : "";
       loadSupplierFilter();
+      loadDCNameFilter();
       renderDashboard();
     }
 
@@ -963,7 +998,7 @@
 
     function loadSupplierFilter() {
       const sel = document.getElementById("supplierFilter");
-      sel.innerHTML = '<option value="">Semua Supplier</option>';
+      sel.innerHTML = '<option value="">All Supplier</option>';
 
       if (currentRole === "supplier") {
         sel.style.display = "none";
@@ -999,6 +1034,33 @@
       sel.value = "";
     }
 
+    function loadDCNameFilter() {
+      const sel = document.getElementById("dcNameFilter");
+      const names = new Map();
+
+      data.forEach(function(item) {
+        const name = String(item.DC_NAME || "").trim();
+        const normalized = normalizeSearchText(name);
+
+        if (normalized && !names.has(normalized)) names.set(normalized, name);
+      });
+
+      sel.innerHTML = '<option value="">All DC Name</option>';
+
+      Array.from(names.values())
+        .sort(function(a, b) {
+          return a.localeCompare(b, "id", { sensitivity: "base" });
+        })
+        .forEach(function(name) {
+          const option = document.createElement("option");
+          option.value = normalizeSearchText(name);
+          option.textContent = name;
+          sel.appendChild(option);
+        });
+
+      sel.value = "";
+    }
+
     function getFilteredData() {
       let rows = [...data];
 
@@ -1016,6 +1078,13 @@
             return normalizeSupplierCode(item.SUPPLIER_CODE) === supplier;
           });
         }
+      }
+
+      const dcName = document.getElementById("dcNameFilter").value;
+      if (dcName) {
+        rows = rows.filter(function(item) {
+          return normalizeSearchText(item.DC_NAME) === dcName;
+        });
       }
 
       const q = normalizeSearchText(document.getElementById("searchInput").value);
@@ -1045,11 +1114,11 @@
       const stockCondition = document.getElementById("stockConditionFilter").value;
       if (stockCondition === "kosong") {
         rows = rows.filter(function(item) {
-          return parseNumber(item.STOCK_QTY) <= 0;
+          return parseNumber(item.DSI_STOCK) < 1;
         });
       } else if (stockCondition === "aman") {
         rows = rows.filter(function(item) {
-          return parseNumber(item.STOCK_QTY) > 0;
+          return parseNumber(item.DSI_STOCK) >= 1;
         });
       }
 
@@ -1063,6 +1132,7 @@
     function resetFilters() {
       document.getElementById("searchInput").value = "";
       document.getElementById("supplierFilter").value = "";
+      document.getElementById("dcNameFilter").value = "";
       document.getElementById("statusFilter").value = "";
       document.getElementById("stockConditionFilter").value = "";
       renderDashboard();
@@ -1701,6 +1771,7 @@
         localStorage.setItem("supplierLastUpdate", now);
 
         loadSupplierFilter();
+        loadDCNameFilter();
         renderDashboard();
 
         showProgress(100, "Upload selesai.");
@@ -2224,6 +2295,7 @@
         localStorage.setItem("supplierLastUpdate", lastUpdate);
 
         loadSupplierFilter();
+        loadDCNameFilter();
         renderDashboard();
 
         showToast("Restore berhasil: " + data.length.toLocaleString("id-ID") + " data.");
@@ -2248,6 +2320,7 @@
         localStorage.removeItem("supplierLastUpdate");
 
         loadSupplierFilter();
+        loadDCNameFilter();
         renderDashboard();
 
         showToast("Semua data berhasil dihapus.");
