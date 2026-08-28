@@ -1580,14 +1580,17 @@
       document.getElementById("emptyStockQtyHeader").style.display =
         currentRole === "admin" ? "" : "none";
 
-      loadEmptyItemsSupplierFilter();
-      loadEmptyItemsDCFilter(selectedSupplier);
+      loadEmptyItemsSupplierFilter(selectedDC);
+      loadEmptyItemsDCFilter(supplierFilter.value);
+
+      const activeSupplier = supplierFilter.value;
+      const activeDC = dcFilter.value;
 
       getFilteredData()
         .filter(function(item) {
           return parseNumber(item.STOCK_QTY) === 0 &&
-            (!selectedSupplier || normalizeSupplierCode(item.SUPPLIER_CODE) === selectedSupplier) &&
-            (!selectedDC || normalizeSearchText(item.DC_NAME) === selectedDC);
+            (!activeSupplier || normalizeSupplierCode(item.SUPPLIER_CODE) === activeSupplier) &&
+            (!activeDC || normalizeSearchText(item.DC_NAME) === activeDC);
         })
         .forEach(function(item) {
           const plu = String(item.PLU || "").trim().toUpperCase();
@@ -1601,14 +1604,11 @@
           ].join(" "));
           if (query && !searchText.includes(query)) return;
 
-          const dateValues = [item.LAST_DELIVERY_DATE, item.BTB_DATE];
-          const latestDelivery = dateValues.reduce(function(latest, value) {
-            const date = parseDate(value);
-            return date && (!latest || date > latest) ? date : latest;
-          }, null);
+          const latestDelivery = parseDate(item.LAST_DELIVERY_DATE);
           const existing = groups.get(plu);
 
-          if (!existing || (latestDelivery && (!existing.lastDelivery || latestDelivery > existing.lastDelivery))) {
+          if (!existing ||
+            (latestDelivery && (!existing.lastDelivery || latestDelivery > existing.lastDelivery))) {
             groups.set(plu, {
               plu: plu,
               description: String(item.PLU_DESC || "").trim(),
@@ -1680,7 +1680,7 @@
       }) ? selectedDC : "";
     }
 
-    function loadEmptyItemsSupplierFilter() {
+    function loadEmptyItemsSupplierFilter(selectedDC) {
       const sel = document.getElementById("emptyItemsSupplierFilter");
       const selectedSupplier = sel.value;
       const suppliers = new Map();
@@ -1691,10 +1691,15 @@
         return;
       }
 
-      data.forEach(function(item) {
-        const code = normalizeSupplierCode(item.SUPPLIER_CODE);
-        if (code) suppliers.set(code, String(item.SUPPLIER_NAME || "").trim());
-      });
+      getFilteredData()
+        .filter(function(item) {
+          return parseNumber(item.STOCK_QTY) === 0 &&
+            (!selectedDC || normalizeSearchText(item.DC_NAME) === selectedDC);
+        })
+        .forEach(function(item) {
+          const code = normalizeSupplierCode(item.SUPPLIER_CODE);
+          if (code) suppliers.set(code, String(item.SUPPLIER_NAME || "").trim());
+        });
 
       sel.innerHTML = '<option value="">Supplier</option>';
       Array.from(suppliers.entries())
