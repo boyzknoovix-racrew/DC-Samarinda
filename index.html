@@ -890,7 +890,7 @@
 
       <div class="table-panel">
         <div class="table-header">
-          <h3>📦 Detail PO, BTB, Service Level,  DSI Stock DC dan Keterangan/Feedback Supplier (Barang Kosong)</h3>
+          <h3>📦 Detail PO, BTB, Service Level,  DSI Stock DC dan Keterangan (Barang Kosong)</h3>
           <span id="rowCount">0 data</span>
         </div>
 
@@ -992,6 +992,8 @@
     let monthlySLChart = null;
     let weeklySLChart = null;
     let searchTimer = null;
+    let filterFrame = null;
+    let latestDeliveryByPLU = new Map();
 
     function normalizeSupplierCode(value) {
       return String(value ?? "").trim().toUpperCase();
@@ -1093,10 +1095,12 @@
     async function loadData() {
       try {
         data = await getAllData();
+        rebuildLatestDeliveryIndex();
         lastUpdate = localStorage.getItem("supplierLastUpdate");
       } catch (e) {
         console.error(e);
         data = [];
+        latestDeliveryByPLU = new Map();
       }
     }
 
@@ -1489,11 +1493,15 @@
     }
 
     function applyFilters() {
-      loadYearFilter();
-      loadMonthFilter();
-      loadSupplierFilter();
-      loadDCNameFilter();
-      renderDashboard();
+      if (filterFrame) cancelAnimationFrame(filterFrame);
+      filterFrame = requestAnimationFrame(function() {
+        filterFrame = null;
+        loadYearFilter();
+        loadMonthFilter();
+        loadSupplierFilter();
+        loadDCNameFilter();
+        renderDashboard();
+      });
     }
 
     function resetFilters() {
@@ -1604,7 +1612,7 @@
           ].join(" "));
           if (query && !searchText.includes(query)) return;
 
-          const latestDelivery = parseDate(item.LAST_DELIVERY_DATE);
+          const latestDelivery = getLatestDeliveryDateByPLU(item);
           const existing = groups.get(plu);
 
           if (!existing ||
@@ -1759,6 +1767,24 @@
       let result = ((totalBTB / totalPO) * 100);
       result = Math.max(0, Math.min(100, result));
       return result;
+    }
+
+    function getLatestDeliveryDateByPLU(item) {
+      const targetPLU = String(item.PLU || "").trim().toUpperCase();
+      return latestDeliveryByPLU.get(targetPLU) || null;
+    }
+
+    function rebuildLatestDeliveryIndex() {
+      latestDeliveryByPLU = new Map();
+
+      data.forEach(function(record) {
+        const plu = String(record.PLU || "").trim().toUpperCase();
+        const date = parseDate(record.LAST_DELIVERY_DATE);
+        if (!plu || !date) return;
+
+        const current = latestDeliveryByPLU.get(plu);
+        if (!current || date > current) latestDeliveryByPLU.set(plu, date);
+      });
     }
 
     function updateCards(rows) {
@@ -2114,6 +2140,7 @@
 
       rows.forEach(function(item) {
         const tr = document.createElement("tr");
+        const latestDelivery = getLatestDeliveryDateByPLU(item);
         const effective = getEffectiveStatus(item);
         const status = String(item.STATUS || "").trim();
         const upperStatus = status.toUpperCase();
@@ -2164,7 +2191,7 @@
           '<td>' + formatPercent(item.SL_VALUE) + '</td>' +
           stockCell +
           '<td>' + formatNumber(item.DSI_STOCK) + '</td>' +
-          '<td>' + safe(item.LAST_DELIVERY_DATE || item.BTB_DATE) + '</td>' +
+          '<td>' + safe(latestDelivery ? formatDate(latestDelivery) : "-") + '</td>' +
           '<td>' + statusHTML + '</td>' +
           '<td>' + ket + '</td>';
 
@@ -2330,6 +2357,7 @@
         }
 
         data = await getAllData();
+        rebuildLatestDeliveryIndex();
         lastUpdate = now;
         localStorage.setItem("supplierLastUpdate", now);
 
@@ -2596,6 +2624,14 @@
       const text = String(value).trim();
       if (!text) return null;
 
+      if (/^\d+(\.\d+)?$/.test(text)) {
+        const serial = Number(text);
+        if (serial > 0) {
+          const excelDate = new Date(Date.UTC(1899, 11, 30) + serial * 86400000);
+          if (!isNaN(excelDate.getTime())) return excelDate;
+        }
+      }
+
       const normalized = text
         .replace(/\./g, "/")
         .replace(/-/g, "/")
@@ -2640,7 +2676,8 @@
         if (year < 100) year += 2000;
 
         const date = new Date(year, month - 1, day);
-        if (!isNaN(date.getTime())) return date;
+        if (!isNaN(date.getTime()) && date.getFullYear() === year &&
+          date.getMonth() === month - 1 && date.getDate() === day) return date;
       }
 
       const date = new Date(normalized);
@@ -2856,6 +2893,7 @@
         }
 
         data = await getAllData();
+        rebuildLatestDeliveryIndex();
         lastUpdate = new Date().toISOString();
         localStorage.setItem("supplierLastUpdate", lastUpdate);
 
@@ -2883,6 +2921,7 @@
       try {
         await deleteAllRecords();
         data = [];
+        rebuildLatestDeliveryIndex();
         lastUpdate = null;
         localStorage.removeItem("supplierLastUpdate");
 
