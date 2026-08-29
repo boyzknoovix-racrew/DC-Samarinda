@@ -2459,7 +2459,7 @@ async function uploadSalesCSV(event) {
     const { error: deleteError } = await supabaseClient
       .from("data_sales")
       .delete()
-      .not("PLU", "is", null);
+      .not("plu", "is", null);
 
     if (deleteError) {
       throw deleteError;
