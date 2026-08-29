@@ -2410,35 +2410,137 @@ async function loadData() {
       };
     }
 
-    async function uploadSalesCSV(event) {
-      if (currentRole !== "admin") {
-        alert("Fitur Upload CSV Sales hanya dapat diakses Admin.");
-        return;
-      }
+async function uploadSalesCSV(event) {
+  if (currentRole !== "admin") {
+    alert("Fitur Upload CSV Sales hanya dapat diakses Admin.");
+    return;
+  }
 
-      const file = event.target.files[0];
-      if (!file) return;
+  const file = event.target.files[0];
+  if (!file) return;
 
-      try {
-        const rows = parseCSV(await readFileAsText(file));
-        validateSalesCSVRows(rows);
-        const normalized = rows.map(normalizeSalesRow);
+  try {
+    showToast("Membaca CSV Sales...");
 
-        await deleteAllSalesRecords();
-        for (let i = 0; i < normalized.length; i += 2000) {
-          await saveManySalesRecords(normalized.slice(i, i + 2000));
-        }
+    // ==============================
+    // BACA CSV
+    // ==============================
+    const rows = parseCSV(await readFileAsText(file));
 
-        salesData = await getAllSalesData();
-        renderSalesDashboard();
-        showToast("Berhasil upload " + normalized.length.toLocaleString("id-ID") + " baris sales.");
-      } catch (e) {
-        console.error(e);
-        alert("Gagal upload CSV Sales.\n\nPenyebab: " + e.message);
-      }
+    validateSalesCSVRows(rows);
 
-      event.target.value = "";
+    const normalized = rows.map(normalizeSalesRow);
+
+    // ==============================
+    // SESUAIKAN DENGAN TABEL
+    // data_sales
+    // ==============================
+    const salesRows = normalized.map(function(row) {
+      return {
+        PLU: row.PLU,
+        PLU_DESC: row.PLU_DESC,
+        SALES_DATE: row.SALES_DATE,
+        SALES_QTY: row.SALES_QTY,
+        SALES_VALUE: row.SALES_VALUE
+      };
+    });
+
+    console.log(
+      "Total CSV Sales:",
+      salesRows.length,
+      "baris"
+    );
+
+    // ==============================
+    // HAPUS DATA SALES LAMA
+    // ==============================
+    showToast("Menghapus data Sales lama...");
+
+    const { error: deleteError } = await supabaseClient
+      .from("data_sales")
+      .delete()
+      .not("PLU", "is", null);
+
+    if (deleteError) {
+      throw deleteError;
     }
+
+    // ==============================
+    // INSERT DATA BARU KE SUPABASE
+    // ==============================
+    const batchSize = 1000;
+
+    for (let i = 0; i < salesRows.length; i += batchSize) {
+
+      const batch = salesRows.slice(i, i + batchSize);
+
+      showToast(
+        "Upload Sales: " +
+        Math.min(i + batch.length, salesRows.length).toLocaleString("id-ID") +
+        " / " +
+        salesRows.length.toLocaleString("id-ID")
+      );
+
+      const { error: insertError } = await supabaseClient
+        .from("data_sales")
+        .insert(batch);
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      console.log(
+        "Sales berhasil diupload:",
+        Math.min(i + batch.length, salesRows.length),
+        "/",
+        salesRows.length
+      );
+    }
+
+    // ==============================
+    // LOAD ULANG DATA SALES
+    // ==============================
+    showToast("Memuat kembali data Sales...");
+
+    await loadSalesData();
+
+    // ==============================
+    // REFRESH DASHBOARD
+    // ==============================
+    if (typeof renderSalesDashboard === "function") {
+      renderSalesDashboard();
+    }
+
+    showToast(
+      "✅ Berhasil upload " +
+      salesRows.length.toLocaleString("id-ID") +
+      " baris Sales."
+    );
+
+    alert(
+      "✅ Upload CSV Sales berhasil.\n\n" +
+      "Total data: " +
+      salesRows.length.toLocaleString("id-ID") +
+      " baris."
+    );
+
+  } catch (e) {
+
+    console.error(
+      "❌ Gagal upload CSV Sales:",
+      e
+    );
+
+    alert(
+      "❌ Gagal upload CSV Sales.\n\n" +
+      "Penyebab: " +
+      e.message
+    );
+
+  }
+
+  event.target.value = "";
+}
 
     function getSalesMonthLabels() {
       return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
