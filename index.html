@@ -1629,6 +1629,65 @@ async function loadData() {
   }
 }
 
+    async function loadSalesData() {
+  try {
+    console.log("Mengambil data Sales dari Supabase...");
+
+    const allSales = [];
+    const batchSize = 1000;
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+
+      console.log(
+        `Mengambil Sales ${from + 1} - ${from + batchSize}...`
+      );
+
+      const { data: batch, error } = await supabaseClient
+        .from("data_sales")
+        .select("*")
+        .range(from, from + batchSize - 1);
+
+      if (error) {
+        throw error;
+      }
+
+      if (batch && batch.length > 0) {
+        allSales.push(...batch);
+      }
+
+      if (!batch || batch.length < batchSize) {
+        hasMore = false;
+      } else {
+        from += batchSize;
+      }
+    }
+
+    salesData = allSales;
+
+    console.log(
+      "✅ Data Sales berhasil dimuat:",
+      salesData.length,
+      "baris"
+    );
+
+  } catch (e) {
+
+    console.error(
+      "❌ Gagal mengambil data Sales:",
+      e
+    );
+
+    salesData = [];
+
+    alert(
+      "❌ Gagal mengambil data Sales dari Supabase.\n\n" +
+      e.message
+    );
+  }
+}
+
     async function login() {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
