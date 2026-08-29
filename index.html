@@ -2431,17 +2431,50 @@ async function uploadSalesCSV(event) {
 
     const normalized = rows.map(normalizeSalesRow);
 
-    // ==============================
-    // SESUAIKAN DENGAN TABEL
-    // data_sales
-    // ==============================
-    const salesRows = normalized.map(function(row) {
+// ==============================
+// MAPPING CSV SALES
+// ==============================
+const salesRows = normalized.map(function(row) {
   return {
-    plu: row.PLU,
-    plu_desc: row.PLU_DESC,
-    sales_date: row.SALES_DATE,
-    sales_qty: row.SALES_QTY,
-    sales_value: row.SALES_VALUE
+    Unit: row["Unit"] || null,
+    DC: row["DC"] || null,
+    Tahun: Number(row["Tahun"]) || null,
+
+    // Bulan dari CSV
+    sales_date: row["Bulan"] || null,
+
+    // plu dari CSV
+    plu: Number(row["plu"]) || null,
+
+    // Deskripsi Produk -> plu_desc
+    plu_desc: row["Deskripsi Produk"] || null,
+
+    Divisi: row["Divisi"] || null,
+    Departemen: row["Departemen"] || null,
+    Kategori: row["Kategori"] || null,
+    Brand: row["Brand"] || null,
+    Principal: row["Principal"] || null,
+
+    // Sales Net -> sales_value
+    sales_value: Number(
+      String(row["Sales Net"] || 0)
+        .replace(/\./g, "")
+        .replace(/,/g, ".")
+    ) || 0,
+
+    // Quantity -> sales_qty
+    sales_qty: Number(
+      String(row["Quantity"] || 0)
+        .replace(/\./g, "")
+        .replace(/,/g, ".")
+    ) || 0,
+
+    // Margin Rph
+    "Margin Rph": Number(
+      String(row["Margin Rph"] || 0)
+        .replace(/\./g, "")
+        .replace(/,/g, ".")
+    ) || 0
   };
 });
 
