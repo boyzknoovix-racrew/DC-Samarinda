@@ -1553,19 +1553,56 @@
       });
     }
 
-    async function loadData() {
-      try {
-        data = await getAllData();
-        salesData = await getAllSalesData();
-        rebuildLatestDeliveryIndex();
-        lastUpdate = localStorage.getItem("supplierLastUpdate");
-      } catch (e) {
-        console.error(e);
-        data = [];
-        salesData = [];
-        latestDeliveryByPLU = new Map();
-      }
+   async function loadData() {
+  try {
+    console.log("Mengambil data dari Supabase...");
+
+    const { data: supplierData, error } = await supabaseClient
+      .from("data_supplier")
+      .select("*");
+
+    if (error) {
+      throw error;
     }
+
+    data = supplierData || [];
+
+    console.log("Data Supabase berhasil dimuat:", data.length, "baris");
+
+    // salesData tetap kosong untuk sementara
+    // karena data sales belum kita pindahkan ke Supabase
+    salesData = [];
+
+    rebuildLatestDeliveryIndex();
+
+    // Ambil waktu update terakhir
+    const { data: latestData, error: latestError } = await supabaseClient
+      .from("data_supplier")
+      .select("LAST_DELIVERY_DATE")
+      .order("LAST_DELIVERY_DATE", { ascending: false })
+      .limit(1);
+
+    if (!latestError && latestData && latestData.length > 0) {
+      lastUpdate = latestData[0].LAST_DELIVERY_DATE;
+    } else {
+      lastUpdate = new Date().toISOString();
+    }
+
+    console.log("Last update:", lastUpdate);
+
+  } catch (e) {
+    console.error("Gagal mengambil data dari Supabase:", e);
+
+    data = [];
+    salesData = [];
+    latestDeliveryByPLU = new Map();
+
+    alert(
+      "❌ Gagal mengambil data dari Supabase.\n\n" +
+      e.message
+    );
+  }
+}
 
     async function login() {
       const username = document.getElementById("username").value.trim();
