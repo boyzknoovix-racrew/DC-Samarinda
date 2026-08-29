@@ -2436,14 +2436,14 @@ async function uploadSalesCSV(event) {
     // data_sales
     // ==============================
     const salesRows = normalized.map(function(row) {
-      return {
-        PLU: row.PLU,
-        PLU_DESC: row.PLU_DESC,
-        SALES_DATE: row.SALES_DATE,
-        SALES_QTY: row.SALES_QTY,
-        SALES_VALUE: row.SALES_VALUE
-      };
-    });
+  return {
+    plu: row.PLU,
+    plu_desc: row.PLU_DESC,
+    sales_date: row.SALES_DATE,
+    sales_qty: row.SALES_QTY,
+    sales_value: row.SALES_VALUE
+  };
+});
 
     console.log(
       "Total CSV Sales:",
