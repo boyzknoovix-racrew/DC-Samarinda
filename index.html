@@ -1664,6 +1664,7 @@ async function loadData() {
       }
     }
 
+    // Simpan seluruh data Sales
     salesData = allSales;
 
     console.log(
@@ -1672,10 +1673,55 @@ async function loadData() {
       "baris"
     );
 
+    // ==========================================
+    // NORMALISASI DATA SALES
+    // Supaya dashboard bisa membaca data
+    // ==========================================
+
+    salesData = salesData.map(row => ({
+      ...row,
+
+      plu: row.plu !== null && row.plu !== undefined
+        ? String(row.plu)
+        : "",
+
+      sales_value: Number(row.sales_value) || 0,
+
+      sales_qty: Number(row.sales_qty) || 0,
+
+      "Margin Rph": Number(row["Margin Rph"]) || 0
+    }));
+
+    console.log(
+      "✅ Sales siap digunakan Dashboard:",
+      salesData.length,
+      "baris"
+    );
+
+    // ==========================================
+    // REFRESH DASHBOARD
+    // ==========================================
+
+    if (typeof renderDashboard === "function") {
+      renderDashboard();
+    }
+
+    if (typeof updateCards === "function") {
+      updateCards(data);
+    }
+
+    if (typeof renderTablePage === "function") {
+      renderTablePage();
+    }
+
+    if (typeof updateInfo === "function") {
+      updateInfo();
+    }
+
   } catch (e) {
 
     console.error(
-      "❌ Gagal mengambil data Sales:",
+      "❌ Gagal mengambil data Sales dari Supabase:",
       e
     );
 
