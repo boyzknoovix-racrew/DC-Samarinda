@@ -1613,11 +1613,29 @@ async function loadData() {
     rebuildLatestDeliveryIndex();
 
     // Ambil tanggal update terakhir
-    const { data: latestData, error: latestError } = await supabaseClient
-      .from("data_supplier")
-      .select("LAST_DELIVERY_DATE")
-      .order("LAST_DELIVERY_DATE", { ascending: false })
-      .limit(1);
+    let latestData = null;
+let latestError = null;
+
+try {
+  const result = await supabaseClient
+    .from("data_supplier")
+    .select("LAST_DELIVERY_DATE")
+    .order("LAST_DELIVERY_DATE", { ascending: false })
+    .limit(1);
+
+  latestData = result.data;
+  latestError = result.error;
+} catch (err) {
+  console.warn("⚠️ Tidak dapat mengambil LAST_DELIVERY_DATE:", err);
+}
+
+if (!latestError && latestData && latestData.length > 0) {
+  lastUpdate = latestData[0].LAST_DELIVERY_DATE;
+} else {
+  lastUpdate = new Date().toISOString();
+}
+
+console.log("Last update:", lastUpdate);
 
     if (!latestError && latestData && latestData.length > 0) {
       lastUpdate = latestData[0].LAST_DELIVERY_DATE;
