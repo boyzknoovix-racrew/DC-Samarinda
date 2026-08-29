@@ -1559,7 +1559,8 @@
 
     const { data: supplierData, error } = await supabaseClient
       .from("data_supplier")
-      .select("*");
+      .select("*")
+      .range(0, 4999);
 
     if (error) {
       throw error;
