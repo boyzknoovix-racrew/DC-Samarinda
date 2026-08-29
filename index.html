@@ -3077,46 +3077,104 @@ const salesRows = normalized.map(function(row) {
   let totalMargin = 0;
 
   // Ambil PLU dari data supplier yang sedang tampil
-  const supplierPLU = new Set();
+  // ==========================================
+// DATA SALES
+// ==========================================
 
-  rows.forEach(function(item) {
+let totalSales = 0;
+let totalSalesQty = 0;
+let totalMargin = 0;
 
-    if (
-      item.PLU !== null &&
-      item.PLU !== undefined &&
-      String(item.PLU).trim() !== ""
-    ) {
-      supplierPLU.add(String(item.PLU).trim());
+// ==========================================
+// NORMALISASI PLU
+// Supaya 123456, "123456", 123456.0
+// dianggap sebagai PLU yang sama
+// ==========================================
+
+function normalizePLU(value) {
+
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  let text = String(value).trim();
+
+  if (!text) {
+    return "";
+  }
+
+  // Hilangkan .0 di belakang angka
+  if (/^\d+\.0+$/.test(text)) {
+    text = text.split(".")[0];
+  }
+
+  // Kalau angka desimal dari JavaScript
+  const numberValue = Number(text);
+
+  if (!isNaN(numberValue) && Number.isInteger(numberValue)) {
+    return String(numberValue);
+  }
+
+  return text.toUpperCase();
+}
+
+
+// ==========================================
+// AMBIL PLU DARI DATA SUPPLIER
+// ==========================================
+
+const supplierPLU = new Set();
+
+rows.forEach(function(item) {
+
+  const plu = normalizePLU(item.PLU);
+
+  if (plu) {
+    supplierPLU.add(plu);
+  }
+
+});
+
+
+// ==========================================
+// HITUNG SALES
+// ==========================================
+
+if (typeof salesData !== "undefined" && Array.isArray(salesData)) {
+
+  salesData.forEach(function(sale) {
+
+    const salePLU = normalizePLU(sale.plu);
+
+    if (!salePLU) {
+      return;
+    }
+
+    if (supplierPLU.has(salePLU)) {
+
+      totalSales += Number(sale.sales_value) || 0;
+
+      totalSalesQty += Number(sale.sales_qty) || 0;
+
+      totalMargin += Number(sale["Margin Rph"]) || 0;
+
     }
 
   });
 
+}
 
-  // Filter Sales berdasarkan PLU Supplier
-  if (typeof salesData !== "undefined" && Array.isArray(salesData)) {
 
-    salesData.forEach(function(sale) {
+// ==========================================
+// DEBUG SALES
+// ==========================================
 
-      const salePLU =
-        sale.plu !== null &&
-        sale.plu !== undefined
-          ? String(sale.plu).trim()
-          : "";
-
-      if (supplierPLU.has(salePLU)) {
-
-        totalSales += Number(sale.sales_value) || 0;
-
-        totalSalesQty += Number(sale.sales_qty) || 0;
-
-        totalMargin += Number(sale["Margin Rph"]) || 0;
-
-      }
-
-    });
-
-  }
-
+console.log("📊 DEBUG SALES");
+console.log("Jumlah PLU Supplier:", supplierPLU.size);
+console.log("Jumlah Data Sales:", salesData.length);
+console.log("Total Sales:", totalSales);
+console.log("Total Sales Qty:", totalSalesQty);
+console.log("Total Margin:", totalMargin);
 
   // ==========================================
   // TAMPILKAN DATA SUPPLIER
