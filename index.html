@@ -1177,6 +1177,21 @@
         </div>
       </div>
 
+        <div class="card card-green">
+  <div class="card-title">TOTAL SALES</div>
+  <div class="card-value" id="totalSales">Rp 0</div>
+</div>
+
+<div class="card card-blue">
+  <div class="card-title">SALES QTY</div>
+  <div class="card-value" id="salesQty">0</div>
+</div>
+
+<div class="card card-purple">
+  <div class="card-title">MARGIN</div>
+  <div class="card-value" id="salesMargin">Rp 0</div>
+</div>
+
       <div class="chart-panel">
         <div class="chart-header">
           <h3>📈 Trend Service Level</h3>
@@ -3002,40 +3017,142 @@ const salesRows = normalized.map(function(row) {
     }
 
     function updateCards(rows) {
-      const uniquePLU = getUniquePLU(rows);
-      const emptyPLU = getUniqueEmptyStockPLU(rows);
 
-      const outstanding = rows.reduce(function(total, item) {
-        return normalizeStatus(item.STATUS).includes("OUTSTANDING")
-          ? total + parseNumber(item.PO_QTY)
-          : total;
-      }, 0);
+  // ==========================================
+  // DATA SUPPLIER
+  // ==========================================
 
-      const expired = rows.filter(function(item) {
-        return normalizeStatus(item.STATUS).includes("EXPIRED");
-      }).length;
+  const uniquePLU = getUniquePLU(rows);
+  const emptyPLU = getUniqueEmptyStockPLU(rows);
 
-      let totalDSI = 0;
-      let dsiCount = 0;
+  const outstanding = rows.reduce(function(total, item) {
+    return normalizeStatus(item.STATUS).includes("OUTSTANDING")
+      ? total + parseNumber(item.PO_QTY)
+      : total;
+  }, 0);
 
-      rows.forEach(function(item) {
-        const d = parseNumber(item.DSI_STOCK);
-        if (!isNaN(d)) {
-          totalDSI += d;
-          dsiCount++;
-        }
-      });
+  const expired = rows.filter(function(item) {
+    return normalizeStatus(item.STATUS).includes("EXPIRED");
+  }).length;
 
-      const sl = calculateServiceLevel(rows);
+  let totalDSI = 0;
+  let dsiCount = 0;
 
-      document.getElementById("totalItem").textContent = formatNumber(uniquePLU.size);
-      document.getElementById("emptyStock").textContent = formatNumber(emptyPLU.size);
-      document.getElementById("outstandingPO").textContent = formatNumber(outstanding);
-      document.getElementById("expiredPO").textContent = formatNumber(expired);
-      document.getElementById("serviceLevel").textContent = sl.toFixed(2) + "%";
-      document.getElementById("averageDSI").textContent = (dsiCount ? totalDSI / dsiCount : 0).toFixed(1);
+  rows.forEach(function(item) {
+    const d = parseNumber(item.DSI_STOCK);
+
+    if (!isNaN(d)) {
+      totalDSI += d;
+      dsiCount++;
+    }
+  });
+
+  const sl = calculateServiceLevel(rows);
+
+
+  // ==========================================
+  // DATA SALES
+  // ==========================================
+
+  let totalSales = 0;
+  let totalSalesQty = 0;
+  let totalMargin = 0;
+
+  // Ambil PLU dari data supplier yang sedang tampil
+  const supplierPLU = new Set();
+
+  rows.forEach(function(item) {
+
+    if (
+      item.PLU !== null &&
+      item.PLU !== undefined &&
+      String(item.PLU).trim() !== ""
+    ) {
+      supplierPLU.add(String(item.PLU).trim());
     }
 
+  });
+
+
+  // Filter Sales berdasarkan PLU Supplier
+  if (typeof salesData !== "undefined" && Array.isArray(salesData)) {
+
+    salesData.forEach(function(sale) {
+
+      const salePLU =
+        sale.plu !== null &&
+        sale.plu !== undefined
+          ? String(sale.plu).trim()
+          : "";
+
+      if (supplierPLU.has(salePLU)) {
+
+        totalSales += Number(sale.sales_value) || 0;
+
+        totalSalesQty += Number(sale.sales_qty) || 0;
+
+        totalMargin += Number(sale["Margin Rph"]) || 0;
+
+      }
+
+    });
+
+  }
+
+
+  // ==========================================
+  // TAMPILKAN DATA SUPPLIER
+  // ==========================================
+
+  document.getElementById("totalItem").textContent =
+    formatNumber(uniquePLU.size);
+
+  document.getElementById("emptyStock").textContent =
+    formatNumber(emptyPLU.size);
+
+  document.getElementById("outstandingPO").textContent =
+    formatNumber(outstanding);
+
+  document.getElementById("expiredPO").textContent =
+    formatNumber(expired);
+
+  document.getElementById("serviceLevel").textContent =
+    sl.toFixed(2) + "%";
+
+  document.getElementById("averageDSI").textContent =
+    (dsiCount ? totalDSI / dsiCount : 0).toFixed(1);
+
+
+  // ==========================================
+  // TAMPILKAN DATA SALES
+  // ==========================================
+
+  const totalSalesElement =
+    document.getElementById("totalSales");
+
+  const salesQtyElement =
+    document.getElementById("salesQty");
+
+  const salesMarginElement =
+    document.getElementById("salesMargin");
+
+
+  if (totalSalesElement) {
+    totalSalesElement.textContent =
+      formatRupiah(totalSales);
+  }
+
+  if (salesQtyElement) {
+    salesQtyElement.textContent =
+      formatNumber(totalSalesQty);
+  }
+
+  if (salesMarginElement) {
+    salesMarginElement.textContent =
+      formatRupiah(totalMargin);
+  }
+
+}
     function updateSupplierInfo(rows) {
       const ids = ["infoSupplierCode", "infoSupplierName", "infoDCCode", "infoDCName"];
 
