@@ -1553,30 +1553,51 @@
       });
     }
 
-   async function loadData() {
+async function loadData() {
   try {
-    console.log("Mengambil data dari Supabase...");
+    console.log("Mengambil seluruh data dari Supabase secara bertahap...");
 
-    const { data: supplierData, error } = await supabaseClient
-      .from("data_supplier")
-      .select("*")
-      .range(0, 4999);
+    const allData = [];
+    const batchSize = 1000;
+    let from = 0;
+    let hasMore = true;
 
-    if (error) {
-      throw error;
+    while (hasMore) {
+      console.log(`Mengambil data ${from + 1} - ${from + batchSize}...`);
+
+      const { data: batch, error } = await supabaseClient
+        .from("data_supplier")
+        .select("*")
+        .range(from, from + batchSize - 1);
+
+      if (error) {
+        throw error;
+      }
+
+      if (batch && batch.length > 0) {
+        allData.push(...batch);
+      }
+
+      if (!batch || batch.length < batchSize) {
+        hasMore = false;
+      } else {
+        from += batchSize;
+      }
     }
 
-    data = supplierData || [];
+    data = allData;
 
-    console.log("Data Supabase berhasil dimuat:", data.length, "baris");
+    console.log(
+      "✅ Seluruh data Supabase berhasil dimuat:",
+      data.length,
+      "baris"
+    );
 
-    // salesData tetap kosong untuk sementara
-    // karena data sales belum kita pindahkan ke Supabase
     salesData = [];
 
     rebuildLatestDeliveryIndex();
 
-    // Ambil waktu update terakhir
+    // Ambil tanggal update terakhir
     const { data: latestData, error: latestError } = await supabaseClient
       .from("data_supplier")
       .select("LAST_DELIVERY_DATE")
@@ -1592,7 +1613,10 @@
     console.log("Last update:", lastUpdate);
 
   } catch (e) {
-    console.error("Gagal mengambil data dari Supabase:", e);
+    console.error(
+      "❌ Gagal mengambil data dari Supabase:",
+      e
+    );
 
     data = [];
     salesData = [];
