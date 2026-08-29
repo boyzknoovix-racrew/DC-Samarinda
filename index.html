@@ -1553,7 +1553,83 @@
       });
     }
 
-async function loadSalesData() {
+async function loadData() {
+  try {
+    console.log("Mengambil seluruh data dari Supabase secara bertahap...");
+
+    const allData = [];
+    const batchSize = 1000;
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      console.log(`Mengambil data ${from + 1} - ${from + batchSize}...`);
+
+      const { data: batch, error } = await supabaseClient
+        .from("data_supplier")
+        .select("*")
+        .range(from, from + batchSize - 1);
+
+      if (error) {
+        throw error;
+      }
+
+      if (batch && batch.length > 0) {
+        allData.push(...batch);
+      }
+
+      if (!batch || batch.length < batchSize) {
+        hasMore = false;
+      } else {
+        from += batchSize;
+      }
+    }
+
+    data = allData;
+
+    console.log(
+      "✅ Seluruh data Supabase berhasil dimuat:",
+      data.length,
+      "baris"
+    );
+
+    await loadSalesData();
+
+    rebuildLatestDeliveryIndex();
+
+    // Ambil tanggal update terakhir
+    const { data: latestData, error: latestError } = await supabaseClient
+      .from("data_supplier")
+      .select("LAST_DELIVERY_DATE")
+      .order("LAST_DELIVERY_DATE", { ascending: false })
+      .limit(1);
+
+    if (!latestError && latestData && latestData.length > 0) {
+      lastUpdate = latestData[0].LAST_DELIVERY_DATE;
+    } else {
+      lastUpdate = new Date().toISOString();
+    }
+
+    console.log("Last update:", lastUpdate);
+
+  } catch (e) {
+    console.error(
+      "❌ Gagal mengambil data dari Supabase:",
+      e
+    );
+
+    data = [];
+    salesData = [];
+    latestDeliveryByPLU = new Map();
+
+    alert(
+      "❌ Gagal mengambil data dari Supabase.\n\n" +
+      e.message
+    );
+  }
+}
+
+    async function loadSalesData() {
   try {
     console.log("Mengambil data Sales dari Supabase...");
 
@@ -1588,7 +1664,6 @@ async function loadSalesData() {
       }
     }
 
-    // Simpan seluruh data Sales
     salesData = allSales;
 
     console.log(
@@ -1596,67 +1671,6 @@ async function loadSalesData() {
       salesData.length,
       "baris"
     );
-
-    // ==========================================
-    // NORMALISASI DATA SALES
-    // Supaya dashboard bisa membaca data
-    // ==========================================
-
-    salesData = salesData.map(row => ({
-      ...row,
-
-      plu: row.plu !== null && row.plu !== undefined
-        ? String(row.plu)
-        : "",
-
-      sales_value: Number(row.sales_value) || 0,
-
-      sales_qty: Number(row.sales_qty) || 0,
-
-      "Margin Rph": Number(row["Margin Rph"]) || 0
-    }));
-
-    console.log(
-      "✅ Sales siap digunakan Dashboard:",
-      salesData.length,
-      "baris"
-    );
-
-    // ==========================================
-    // REFRESH DASHBOARD
-    // ==========================================
-
-    if (typeof renderDashboard === "function") {
-      renderDashboard();
-    }
-
-    if (typeof updateCards === "function") {
-      updateCards(data);
-    }
-
-    if (typeof renderTablePage === "function") {
-      renderTablePage();
-    }
-
-    if (typeof updateInfo === "function") {
-      updateInfo();
-    }
-
-  } catch (e) {
-
-    console.error(
-      "❌ Gagal mengambil data Sales dari Supabase:",
-      e
-    );
-
-    salesData = [];
-
-    alert(
-      "❌ Gagal mengambil data Sales dari Supabase.\n\n" +
-      e.message
-    );
-  }
-}
 
   } catch (e) {
 
