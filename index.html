@@ -1177,21 +1177,6 @@
         </div>
       </div>
 
-        <div class="card card-green">
-  <div class="card-title">TOTAL SALES</div>
-  <div class="card-value" id="totalSales">Rp 0</div>
-</div>
-
-<div class="card card-blue">
-  <div class="card-title">SALES QTY</div>
-  <div class="card-value" id="salesQty">0</div>
-</div>
-
-<div class="card card-purple">
-  <div class="card-title">MARGIN</div>
-  <div class="card-value" id="salesMargin">Rp 0</div>
-</div>
-
       <div class="chart-panel">
         <div class="chart-header">
           <h3>📈 Trend Service Level</h3>
@@ -1613,29 +1598,11 @@ async function loadData() {
     rebuildLatestDeliveryIndex();
 
     // Ambil tanggal update terakhir
-    let latestData = null;
-let latestError = null;
-
-try {
-  const result = await supabaseClient
-    .from("data_supplier")
-    .select("LAST_DELIVERY_DATE")
-    .order("LAST_DELIVERY_DATE", { ascending: false })
-    .limit(1);
-
-  latestData = result.data;
-  latestError = result.error;
-} catch (err) {
-  console.warn("⚠️ Tidak dapat mengambil LAST_DELIVERY_DATE:", err);
-}
-
-if (!latestError && latestData && latestData.length > 0) {
-  lastUpdate = latestData[0].LAST_DELIVERY_DATE;
-} else {
-  lastUpdate = new Date().toISOString();
-}
-
-console.log("Last update:", lastUpdate);
+    const { data: latestData, error: latestError } = await supabaseClient
+      .from("data_supplier")
+      .select("LAST_DELIVERY_DATE")
+      .order("LAST_DELIVERY_DATE", { ascending: false })
+      .limit(1);
 
     if (!latestError && latestData && latestData.length > 0) {
       lastUpdate = latestData[0].LAST_DELIVERY_DATE;
@@ -1663,109 +1630,48 @@ console.log("Last update:", lastUpdate);
 }
 
     async function loadSalesData() {
-  try {
-    console.log("Mengambil data Sales dari Supabase...");
+      try {
+        console.log("Mengambil data Sales dari Supabase...");
 
-    const allSales = [];
-    const batchSize = 1000;
-    let from = 0;
-    let hasMore = true;
+        const allSales = [];
+        const batchSize = 1000;
+        let from = 0;
+        let hasMore = true;
 
-    while (hasMore) {
+        while (hasMore) {
+          console.log(`Mengambil Sales ${from + 1} - ${from + batchSize}...`);
 
-      console.log(
-        `Mengambil Sales ${from + 1} - ${from + batchSize}...`
-      );
+          const { data: batch, error } = await supabaseClient
+            .from("data_sales")
+            .select("*")
+            .range(from, from + batchSize - 1);
 
-      const { data: batch, error } = await supabaseClient
-        .from("data_sales")
-        .select("*")
-        .range(from, from + batchSize - 1);
+          if (error) throw error;
 
-      if (error) {
-        throw error;
+          if (batch && batch.length) {
+            allSales.push(...batch.map(normalizeSalesDatabaseRow));
+          }
+
+          if (!batch || batch.length < batchSize) {
+            hasMore = false;
+          } else {
+            from += batchSize;
+          }
+        }
+
+        salesData = allSales;
+        console.log("✅ Data Sales berhasil dimuat:", salesData.length, "baris");
+
+        if (salesData.length) {
+          console.log("Contoh Sales:", salesData[0]);
+        }
+      } catch (e) {
+        console.error("❌ Gagal mengambil data Sales:", e);
+        salesData = [];
+        document.getElementById("salesDataInfo").textContent = "Gagal memuat data sales";
+        console.warn("Pastikan tabel data_sales memiliki kolom CSV yang sesuai dan policy SELECT mengizinkan akses.");
       }
-
-      if (batch && batch.length > 0) {
-        allSales.push(...batch);
-      }
-
-      if (!batch || batch.length < batchSize) {
-        hasMore = false;
-      } else {
-        from += batchSize;
-      }
     }
-
-    // Simpan seluruh data Sales
-    salesData = allSales;
-
-    console.log(
-      "✅ Data Sales berhasil dimuat:",
-      salesData.length,
-      "baris"
-    );
-
-    // ==========================================
-    // NORMALISASI DATA SALES
-    // Supaya dashboard bisa membaca data
-    // ==========================================
-
-    salesData = salesData.map(row => ({
-      ...row,
-
-      plu: row.plu !== null && row.plu !== undefined
-        ? String(row.plu)
-        : "",
-
-      sales_value: Number(row.sales_value) || 0,
-
-      sales_qty: Number(row.sales_qty) || 0,
-
-      "Margin Rph": Number(row["Margin Rph"]) || 0
-    }));
-
-    console.log(
-      "✅ Sales siap digunakan Dashboard:",
-      salesData.length,
-      "baris"
-    );
-
-    // ==========================================
-    // REFRESH DASHBOARD
-    // ==========================================
-
-    if (typeof renderDashboard === "function") {
-      renderDashboard();
-    }
-
-    if (typeof updateCards === "function") {
-      updateCards(data);
-    }
-
-    if (typeof renderTablePage === "function") {
-      renderTablePage();
-    }
-
-    if (typeof updateInfo === "function") {
-      updateInfo();
-    }
-
-  } catch (e) {
-
-    console.error(
-      "❌ Gagal mengambil data Sales dari Supabase:",
-      e
-    );
-
-    salesData = [];
-
-    alert(
-      "❌ Gagal mengambil data Sales dari Supabase.\n\n" +
-      e.message
-    );
-  }
-}
 
     async function login() {
       const username = document.getElementById("username").value.trim();
@@ -2349,30 +2255,6 @@ console.log("Last update:", lastUpdate);
       return String(row.DESKRIPSI_PRODUK || "").trim();
     }
 
-    function renderSalesDashboard() {
-      loadSalesFilters();
-      const rows = getSalesFilteredData();
-      const totals = rows.reduce(function(result, row) {
-        result.value += parseNumber(row.SALES_NET);
-        result.qty += parseNumber(row.QUANTITY);
-        result.margin += parseNumber(row.MARGIN_RPH);
-        return result;
-      }, { value: 0, qty: 0, margin: 0 });
-      const products = new Set(rows.map(getSalesProductKey).filter(Boolean));
-
-      document.getElementById("salesTotalValue").textContent = formatRupiah(totals.value);
-      document.getElementById("salesTotalQty").textContent = formatNumber(totals.qty);
-      document.getElementById("salesTotalMargin").textContent = formatRupiah(totals.margin);
-      document.getElementById("salesProductCount").textContent = formatNumber(products.size);
-      const visibleData = getSalesVisibleData();
-      document.getElementById("salesDataInfo").textContent = visibleData.length
-        ? visibleData.length.toLocaleString("id-ID") + " baris data"
-        : "Belum ada data sales";
-
-      renderSalesTable(rows);
-      renderSalesChart(rows);
-    }
-
     function renderSalesTable(rows) {
       const grouped = new Map();
       rows.forEach(function(row) {
@@ -2457,6 +2339,7 @@ console.log("Last update:", lastUpdate);
       }));
       const required = [
         ["DC", "DC"],
+        ["PLU", "plu"],
         ["TAHUN", "Tahun"],
         ["BULAN", "Bulan"],
         ["DESKRIPSI PRODUK", "Deskripsi Produk"],
@@ -2477,182 +2360,102 @@ console.log("Last update:", lastUpdate);
         DC: String(getFlexible(row, ["DC"], "")).trim(),
         TAHUN: String(getFlexible(row, ["TAHUN", "YEAR"], "")).trim(),
         BULAN: String(getFlexible(row, ["BULAN", "MONTH"], "")).trim(),
+        PLU: String(getFlexible(row, ["PLU"], "")).trim(),
         DESKRIPSI_PRODUK: String(getFlexible(row, ["DESKRIPSI PRODUK", "DESKRIPSI_PRODUK", "PRODUCT DESCRIPTION"], "")).trim(),
         DIVISI: String(getFlexible(row, ["DIVISI", "DIVISION"], "")).trim(),
         DEPARTEMEN: String(getFlexible(row, ["DEPARTEMEN", "DEPARTMENT"], "")).trim(),
         KATEGORI: String(getFlexible(row, ["KATEGORI", "CATEGORY"], "")).trim(),
         BRAND: String(getFlexible(row, ["BRAND"], "")).trim(),
         PRINCIPAL: String(getFlexible(row, ["PRINCIPAL"], "")).trim(),
-        SALES_NET: getFlexible(row, ["SALES NET", "SALES_NET"], 0),
-        QUANTITY: getFlexible(row, ["QUANTITY", "QTY"], 0),
-        MARGIN_RPH: getFlexible(row, ["MARGIN RPH", "MARGIN_RPH", "MARGIN"], 0)
+        SALES_NET: parseNumber(getFlexible(row, ["SALES NET", "SALES_NET"], 0)),
+        QUANTITY: parseNumber(getFlexible(row, ["QUANTITY", "QTY"], 0)),
+        MARGIN_RPH: parseNumber(getFlexible(row, ["MARGIN RPH", "MARGIN_RPH", "MARGIN"], 0))
       };
     }
 
-async function uploadSalesCSV(event) {
-  if (currentRole !== "admin") {
-    alert("Fitur Upload CSV Sales hanya dapat diakses Admin.");
-    return;
-  }
-
-  const file = event.target.files[0];
-  if (!file) return;
-
-  try {
-    showToast("Membaca CSV Sales...");
-
-    // ==============================
-    // BACA CSV
-    // ==============================
-    const rows = parseCSV(await readFileAsText(file));
-
-    validateSalesCSVRows(rows);
-
-    const normalized = rows.map(normalizeSalesRow);
-
-// ==============================
-// MAPPING CSV SALES
-// ==============================
-const salesRows = normalized.map(function(row) {
-  return {
-    Unit: row["Unit"] || null,
-    DC: row["DC"] || null,
-    Tahun: Number(row["Tahun"]) || null,
-
-    // Bulan dari CSV
-    sales_date: row["Bulan"] || null,
-
-    // plu dari CSV
-    plu: Number(row["plu"]) || null,
-
-    // Deskripsi Produk -> plu_desc
-    plu_desc: row["Deskripsi Produk"] || null,
-
-    Divisi: row["Divisi"] || null,
-    Departemen: row["Departemen"] || null,
-    Kategori: row["Kategori"] || null,
-    Brand: row["Brand"] || null,
-    Principal: row["Principal"] || null,
-
-    // Sales Net -> sales_value
-    sales_value: Number(
-      String(row["Sales Net"] || 0)
-        .replace(/\./g, "")
-        .replace(/,/g, ".")
-    ) || 0,
-
-    // Quantity -> sales_qty
-    sales_qty: Number(
-      String(row["Quantity"] || 0)
-        .replace(/\./g, "")
-        .replace(/,/g, ".")
-    ) || 0,
-
-    // Margin Rph
-    "Margin Rph": Number(
-      String(row["Margin Rph"] || 0)
-        .replace(/\./g, "")
-        .replace(/,/g, ".")
-    ) || 0
-  };
-});
-
-    console.log(
-      "Total CSV Sales:",
-      salesRows.length,
-      "baris"
-    );
-
-    // ==============================
-    // HAPUS DATA SALES LAMA
-    // ==============================
-    showToast("Menghapus data Sales lama...");
-
-    const { error: deleteError } = await supabaseClient
-      .from("data_sales")
-      .delete()
-      .not("plu", "is", null);
-
-    if (deleteError) {
-      throw deleteError;
+    function normalizeSalesDatabaseRow(row) {
+      // Mendukung nama kolom PostgreSQL lowercase maupun nama kolom CSV/uppercase.
+      return {
+        UNIT: String(getFlexible(row, ["UNIT", "unit"], "")).trim(),
+        DC: String(getFlexible(row, ["DC", "dc"], "")).trim(),
+        TAHUN: String(getFlexible(row, ["TAHUN", "tahun", "YEAR", "year"], "")).trim(),
+        BULAN: String(getFlexible(row, ["BULAN", "bulan", "MONTH", "month"], "")).trim(),
+        PLU: String(getFlexible(row, ["PLU", "plu"], "")).trim(),
+        DESKRIPSI_PRODUK: String(getFlexible(row, ["DESKRIPSI_PRODUK", "deskripsi_produk", "DESKRIPSI PRODUK", "product_description"], "")).trim(),
+        DIVISI: String(getFlexible(row, ["DIVISI", "divisi", "DIVISION", "division"], "")).trim(),
+        DEPARTEMEN: String(getFlexible(row, ["DEPARTEMEN", "departemen", "DEPARTMENT", "department"], "")).trim(),
+        KATEGORI: String(getFlexible(row, ["KATEGORI", "kategori", "CATEGORY", "category"], "")).trim(),
+        BRAND: String(getFlexible(row, ["BRAND", "brand"], "")).trim(),
+        PRINCIPAL: String(getFlexible(row, ["PRINCIPAL", "principal"], "")).trim(),
+        SALES_NET: parseNumber(getFlexible(row, ["SALES_NET", "sales_net", "SALES NET", "sales_value"], 0)),
+        QUANTITY: parseNumber(getFlexible(row, ["QUANTITY", "quantity", "QTY", "sales_qty"], 0)),
+        MARGIN_RPH: parseNumber(getFlexible(row, ["MARGIN_RPH", "margin_rph", "MARGIN RPH", "margin"], 0))
+      };
     }
 
-    // ==============================
-    // INSERT DATA BARU KE SUPABASE
-    // ==============================
-    const batchSize = 1000;
-
-    for (let i = 0; i < salesRows.length; i += batchSize) {
-
-      const batch = salesRows.slice(i, i + batchSize);
-
-      showToast(
-        "Upload Sales: " +
-        Math.min(i + batch.length, salesRows.length).toLocaleString("id-ID") +
-        " / " +
-        salesRows.length.toLocaleString("id-ID")
-      );
-
-      const { error: insertError } = await supabaseClient
-        .from("data_sales")
-        .insert(batch);
-
-      if (insertError) {
-        throw insertError;
+    async function uploadSalesCSV(event) {
+      if (currentRole !== "admin") {
+        alert("Fitur Upload CSV Sales hanya dapat diakses Admin.");
+        return;
       }
 
-      console.log(
-        "Sales berhasil diupload:",
-        Math.min(i + batch.length, salesRows.length),
-        "/",
-        salesRows.length
-      );
+      const file = event.target.files[0];
+      if (!file) return;
+
+      try {
+        showToast("Membaca CSV Sales...");
+        const rows = parseCSV(await readFileAsText(file));
+        validateSalesCSVRows(rows);
+        const normalized = rows.map(normalizeSalesRow);
+
+        // Nama kolom mengikuti PostgreSQL/Supabase agar konsisten.
+        const salesRows = normalized.map(function(row) {
+          return {
+            unit: row.UNIT,
+            dc: row.DC,
+            tahun: row.TAHUN,
+            bulan: row.BULAN,
+            plu: row.PLU,
+            deskripsi_produk: row.DESKRIPSI_PRODUK,
+            divisi: row.DIVISI,
+            departemen: row.DEPARTEMEN,
+            kategori: row.KATEGORI,
+            brand: row.BRAND,
+            principal: row.PRINCIPAL,
+            sales_net: row.SALES_NET,
+            quantity: row.QUANTITY,
+            margin_rph: row.MARGIN_RPH
+          };
+        });
+
+        console.log("Total CSV Sales:", salesRows.length, "baris");
+
+        showToast("Menghapus data Sales lama...");
+        const { error: deleteError } = await supabaseClient
+          .from("data_sales")
+          .delete()
+          .not("plu", "is", null);
+        if (deleteError) throw deleteError;
+
+        const batchSize = 500;
+        for (let i = 0; i < salesRows.length; i += batchSize) {
+          const batch = salesRows.slice(i, i + batchSize);
+          showToast("Upload Sales: " + Math.min(i + batch.length, salesRows.length).toLocaleString("id-ID") + " / " + salesRows.length.toLocaleString("id-ID"));
+          const { error: insertError } = await supabaseClient.from("data_sales").insert(batch);
+          if (insertError) throw insertError;
+        }
+
+        await loadSalesData();
+        renderSalesDashboard();
+        showToast("✅ Berhasil upload " + salesRows.length.toLocaleString("id-ID") + " baris Sales.");
+        alert("✅ Upload CSV Sales berhasil.\n\nTotal data: " + salesRows.length.toLocaleString("id-ID") + " baris.");
+      } catch (e) {
+        console.error("❌ Gagal upload CSV Sales:", e);
+        alert("❌ Gagal upload CSV Sales.\n\nPenyebab: " + e.message + "\n\nJika error menyebut kolom tidak ditemukan, sesuaikan struktur tabel data_sales dengan SQL yang saya berikan.");
+      }
+
+      event.target.value = "";
     }
-
-    // ==============================
-    // LOAD ULANG DATA SALES
-    // ==============================
-    showToast("Memuat kembali data Sales...");
-
-    await loadSalesData();
-
-    // ==============================
-    // REFRESH DASHBOARD
-    // ==============================
-    if (typeof renderSalesDashboard === "function") {
-      renderSalesDashboard();
-    }
-
-    showToast(
-      "✅ Berhasil upload " +
-      salesRows.length.toLocaleString("id-ID") +
-      " baris Sales."
-    );
-
-    alert(
-      "✅ Upload CSV Sales berhasil.\n\n" +
-      "Total data: " +
-      salesRows.length.toLocaleString("id-ID") +
-      " baris."
-    );
-
-  } catch (e) {
-
-    console.error(
-      "❌ Gagal upload CSV Sales:",
-      e
-    );
-
-    alert(
-      "❌ Gagal upload CSV Sales.\n\n" +
-      "Penyebab: " +
-      e.message
-    );
-
-  }
-
-  event.target.value = "";
-}
 
     function getSalesMonthLabels() {
       return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -3035,200 +2838,40 @@ const salesRows = normalized.map(function(row) {
     }
 
     function updateCards(rows) {
+      const uniquePLU = getUniquePLU(rows);
+      const emptyPLU = getUniqueEmptyStockPLU(rows);
 
-  // ==========================================
-  // DATA SUPPLIER
-  // ==========================================
+      const outstanding = rows.reduce(function(total, item) {
+        return normalizeStatus(item.STATUS).includes("OUTSTANDING")
+          ? total + parseNumber(item.PO_QTY)
+          : total;
+      }, 0);
 
-  const uniquePLU = getUniquePLU(rows);
-  const emptyPLU = getUniqueEmptyStockPLU(rows);
+      const expired = rows.filter(function(item) {
+        return normalizeStatus(item.STATUS).includes("EXPIRED");
+      }).length;
 
-  const outstanding = rows.reduce(function(total, item) {
-    return normalizeStatus(item.STATUS).includes("OUTSTANDING")
-      ? total + parseNumber(item.PO_QTY)
-      : total;
-  }, 0);
+      let totalDSI = 0;
+      let dsiCount = 0;
 
-  const expired = rows.filter(function(item) {
-    return normalizeStatus(item.STATUS).includes("EXPIRED");
-  }).length;
+      rows.forEach(function(item) {
+        const d = parseNumber(item.DSI_STOCK);
+        if (!isNaN(d)) {
+          totalDSI += d;
+          dsiCount++;
+        }
+      });
 
-  let totalDSI = 0;
-  let dsiCount = 0;
+      const sl = calculateServiceLevel(rows);
 
-  rows.forEach(function(item) {
-    const d = parseNumber(item.DSI_STOCK);
-
-    if (!isNaN(d)) {
-      totalDSI += d;
-      dsiCount++;
-    }
-  });
-
-  const sl = calculateServiceLevel(rows);
-
-
-  // ==========================================
-  // DATA SALES
-  // ==========================================
-
-  let totalSales = 0;
-  let totalSalesQty = 0;
-  let totalMargin = 0;
-
-  // Ambil PLU dari data supplier yang sedang tampil
-  // ==========================================
-// DATA SALES
-// ==========================================
-
-let totalSales = 0;
-let totalSalesQty = 0;
-let totalMargin = 0;
-
-// ==========================================
-// NORMALISASI PLU
-// Supaya 123456, "123456", 123456.0
-// dianggap sebagai PLU yang sama
-// ==========================================
-
-function normalizePLU(value) {
-
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  let text = String(value).trim();
-
-  if (!text) {
-    return "";
-  }
-
-  // Hilangkan .0 di belakang angka
-  if (/^\d+\.0+$/.test(text)) {
-    text = text.split(".")[0];
-  }
-
-  // Kalau angka desimal dari JavaScript
-  const numberValue = Number(text);
-
-  if (!isNaN(numberValue) && Number.isInteger(numberValue)) {
-    return String(numberValue);
-  }
-
-  return text.toUpperCase();
-}
-
-
-// ==========================================
-// AMBIL PLU DARI DATA SUPPLIER
-// ==========================================
-
-const supplierPLU = new Set();
-
-rows.forEach(function(item) {
-
-  const plu = normalizePLU(item.PLU);
-
-  if (plu) {
-    supplierPLU.add(plu);
-  }
-
-});
-
-
-// ==========================================
-// HITUNG SALES
-// ==========================================
-
-if (typeof salesData !== "undefined" && Array.isArray(salesData)) {
-
-  salesData.forEach(function(sale) {
-
-    const salePLU = normalizePLU(sale.plu);
-
-    if (!salePLU) {
-      return;
+      document.getElementById("totalItem").textContent = formatNumber(uniquePLU.size);
+      document.getElementById("emptyStock").textContent = formatNumber(emptyPLU.size);
+      document.getElementById("outstandingPO").textContent = formatNumber(outstanding);
+      document.getElementById("expiredPO").textContent = formatNumber(expired);
+      document.getElementById("serviceLevel").textContent = sl.toFixed(2) + "%";
+      document.getElementById("averageDSI").textContent = (dsiCount ? totalDSI / dsiCount : 0).toFixed(1);
     }
 
-    if (supplierPLU.has(salePLU)) {
-
-      totalSales += Number(sale.sales_value) || 0;
-
-      totalSalesQty += Number(sale.sales_qty) || 0;
-
-      totalMargin += Number(sale["Margin Rph"]) || 0;
-
-    }
-
-  });
-
-}
-
-
-// ==========================================
-// DEBUG SALES
-// ==========================================
-
-console.log("📊 DEBUG SALES");
-console.log("Jumlah PLU Supplier:", supplierPLU.size);
-console.log("Jumlah Data Sales:", salesData.length);
-console.log("Total Sales:", totalSales);
-console.log("Total Sales Qty:", totalSalesQty);
-console.log("Total Margin:", totalMargin);
-
-  // ==========================================
-  // TAMPILKAN DATA SUPPLIER
-  // ==========================================
-
-  document.getElementById("totalItem").textContent =
-    formatNumber(uniquePLU.size);
-
-  document.getElementById("emptyStock").textContent =
-    formatNumber(emptyPLU.size);
-
-  document.getElementById("outstandingPO").textContent =
-    formatNumber(outstanding);
-
-  document.getElementById("expiredPO").textContent =
-    formatNumber(expired);
-
-  document.getElementById("serviceLevel").textContent =
-    sl.toFixed(2) + "%";
-
-  document.getElementById("averageDSI").textContent =
-    (dsiCount ? totalDSI / dsiCount : 0).toFixed(1);
-
-
-  // ==========================================
-  // TAMPILKAN DATA SALES
-  // ==========================================
-
-  const totalSalesElement =
-    document.getElementById("totalSales");
-
-  const salesQtyElement =
-    document.getElementById("salesQty");
-
-  const salesMarginElement =
-    document.getElementById("salesMargin");
-
-
-  if (totalSalesElement) {
-    totalSalesElement.textContent =
-      formatRupiah(totalSales);
-  }
-
-  if (salesQtyElement) {
-    salesQtyElement.textContent =
-      formatNumber(totalSalesQty);
-  }
-
-  if (salesMarginElement) {
-    salesMarginElement.textContent =
-      formatRupiah(totalMargin);
-  }
-
-}
     function updateSupplierInfo(rows) {
       const ids = ["infoSupplierCode", "infoSupplierName", "infoDCCode", "infoDCName"];
 
