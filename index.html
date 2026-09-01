@@ -1618,9 +1618,15 @@ async function loadData() {
     salesData = [];
     latestDeliveryByPLU = new Map();
 
+    const isPermissionDenied = e && (e.code === "42501" || /permission denied for table/i.test(e.message || ""));
+    const isUnauthorized = e && (e.status === 401 || e.code === "401" || /invalid api key/i.test(e.message || ""));
+    const message = isPermissionDenied
+      ? "Supabase terhubung, tetapi role anon belum memiliki izin SELECT pada tabel data_supplier. Jalankan GRANT dan policy RLS di Supabase SQL Editor."
+      : isUnauthorized
+        ? "Supabase menolak API key (401). Pastikan SUPABASE_KEY adalah Publishable/anon key aktif dari Project Settings > API."
+      : "Gagal mengambil data dari Supabase: " + (e.message || "kesalahan tidak diketahui");
     alert(
-      "❌ Gagal mengambil data dari Supabase.\n\n" +
-      e.message
+      "❌ " + message
     );
   }
 }
@@ -1664,7 +1670,11 @@ async function loadData() {
       } catch (e) {
         console.error("❌ Gagal mengambil data Sales:", e);
         salesData = [];
-        document.getElementById("salesDataInfo").textContent = "Gagal memuat data sales";
+        document.getElementById("salesDataInfo").textContent = e && (e.code === "42501" || /permission denied for table/i.test(e.message || ""))
+          ? "Izin SELECT tabel data_sales belum diberikan"
+          : e && (e.status === 401 || e.code === "401" || /invalid api key/i.test(e.message || ""))
+            ? "API key Supabase tidak valid"
+          : "Gagal memuat data sales";
         console.warn("Pastikan tabel data_sales memiliki kolom CSV yang sesuai dan policy SELECT mengizinkan akses.");
       }
     }
@@ -4070,7 +4080,6 @@ async function testSupabaseConnection() {
   }
 }
 
-testSupabaseConnection();
 </script>
 
 </body>
