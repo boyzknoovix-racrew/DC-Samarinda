@@ -2252,6 +2252,11 @@ async function loadData() {
       return names[String(month).trim().toLowerCase()] || 99;
     }
 
+    function normalizeSalesText(value) {
+      const text = String(value ?? "").trim();
+      return /^(null|undefined|nan)$/i.test(text) ? "" : text;
+    }
+
     function formatCompactSalesValue(value) {
       if (value === null || value === undefined || value === "") return "";
       const amount = parseNumber(value);
@@ -2307,8 +2312,10 @@ async function loadData() {
 
     function renderSalesChart(rows) {
       const grouped = new Map();
-      rows.forEach(function(row) {
-        const key = String(row.TAHUN || "") + "-" + String(row.BULAN || "");
+      rows.filter(function(row) {
+        return normalizeSalesText(row.TAHUN) && getSalesMonthNumber(row.BULAN) <= 12;
+      }).forEach(function(row) {
+        const key = normalizeSalesText(row.TAHUN) + "-" + normalizeSalesText(row.BULAN);
         const current = grouped.get(key) || { label: key, value: 0 };
         current.value += parseNumber(row.SALES_NET);
         grouped.set(key, current);
@@ -2494,11 +2501,16 @@ async function loadData() {
     }
 
     function getSalesTrendRows(rows, field) {
-      const years = Array.from(new Set(rows.map(function(row) { return row.TAHUN; }).filter(Boolean))).sort();
+      const validRows = rows.filter(function(row) {
+        return normalizeSalesText(row.TAHUN) && getSalesMonthNumber(row.BULAN) <= 12;
+      });
+      const years = Array.from(new Set(validRows.map(function(row) {
+        return normalizeSalesText(row.TAHUN);
+      }))).sort();
       const monthLabels = getSalesMonthLabels();
       return { years: years, labels: monthLabels, values: years.map(function(year) {
         return monthLabels.map(function(label) {
-          return rows.filter(function(row) {
+          return validRows.filter(function(row) {
             return row.TAHUN === year && getSalesMonthNumber(row.BULAN) === getSalesMonthNumber(label);
           }).reduce(function(total, row) { return total + parseNumber(row[field]); }, 0);
         });
@@ -2565,7 +2577,7 @@ async function loadData() {
     function createSalesYearComparisonChart(id, rows, mode, color) {
       const totals = new Map();
       rows.forEach(function(row) {
-        const year = String(row.TAHUN || "").trim();
+        const year = normalizeSalesText(row.TAHUN);
         if (!year) return;
         const current = totals.get(year) || { sales: 0, margin: 0 };
         current.sales += parseNumber(row.SALES_NET);
