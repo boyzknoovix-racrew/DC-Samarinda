@@ -1380,6 +1380,10 @@
             <div class="table-header"><h3>Top 10 Produk by Sales Rp</h3></div>
             <div class="table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>PRODUK</th><th>SALES RP</th></tr></thead><tbody id="salesProductTable"></tbody></table></div>
           </div>
+          <div class="table-panel">
+            <div class="table-header"><h3>10 Produk Terbawah by Sales Rp</h3></div>
+            <div class="table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>PRODUK</th><th>SALES RP</th></tr></thead><tbody id="bottomSalesProductTable"></tbody></table></div>
+          </div>
         </div>
       </div>
     </main>
@@ -2218,7 +2222,9 @@ async function loadData() {
       const values = function(field) {
         return Array.from(new Set(getSalesVisibleData().map(function(row) {
           return String(row[field] || "").trim();
-        }).filter(Boolean)));
+        }).filter(function(value) {
+          return value && value.toLowerCase() !== "null" && value.toLowerCase() !== "undefined";
+        })));
       };
 
       loadSalesSelect("salesDCFilter", values("DC").sort(), "All DC Name", dc);
@@ -2247,6 +2253,7 @@ async function loadData() {
     }
 
     function formatCompactSalesValue(value) {
+      if (value === null || value === undefined || value === "") return "";
       const amount = parseNumber(value);
       if (Math.abs(amount) >= 1000000000000) {
         return "Rp " + (amount / 1000000000000).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " T";
@@ -2330,10 +2337,14 @@ async function loadData() {
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            tooltip: { callbacks: { label: function(context) { return formatRupiah(context.raw); } } }
+            tooltip: { callbacks: { label: function(context) {
+              return formatCompactSalesValue(context.raw);
+            } } }
           },
           scales: {
-            y: { beginAtZero: true, ticks: { callback: function(value) { return formatRupiah(value); } } },
+            y: { beginAtZero: true, ticks: { callback: function(value) {
+              return formatCompactSalesValue(value);
+            } } },
             x: { grid: { display: false } }
           }
         }
@@ -2522,6 +2533,7 @@ async function loadData() {
           plugins: {
             legend: { position: "bottom", labels: { boxWidth: 18, font: { size: 10 } } },
             tooltip: { callbacks: { label: function(context) {
+              if (context.raw === null || context.raw === undefined) return "";
               return percentMode ? context.raw.toFixed(2) + "%" :
                 currencyMode ? formatRupiah(context.raw) : formatNumber(context.raw);
             } } }
@@ -2591,21 +2603,30 @@ async function loadData() {
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: function(context) {
+              if (context.raw === null || context.raw === undefined) return "";
               return percentMode ? context.raw.toFixed(2) + "%" :
                 currencyMode ? formatRupiah(context.raw) : formatNumber(context.raw);
             } } },
             datalabels: {
-              display: true,
+              display: function(context) {
+                return context.dataset.data[context.dataIndex] !== null &&
+                  context.dataset.data[context.dataIndex] !== undefined &&
+                  context.dataset.data[context.dataIndex] !== 0;
+              },
               anchor: "end",
               align: "top",
-              offset: 4,
+              offset: 3,
+              clamp: true,
+              clip: false,
               color: "#0f2f6f",
-              font: { size: 10, weight: "bold" },
+              font: { size: 9, weight: "bold" },
               formatter: function(value) {
-                return percentMode ? value.toFixed(2) + "%" : formatCompactSalesValue(value);
+                return value === null || value === undefined || value === 0 ? "" :
+                  percentMode ? value.toFixed(2) + "%" : formatCompactSalesValue(value);
               }
             }
           },
+          layout: { padding: { top: 18, right: 8, left: 8 } },
           scales: {
             y: {
               beginAtZero: true,
@@ -2645,6 +2666,7 @@ async function loadData() {
       renderSalesTopTable("salesPrincipalTable", rows, "PRINCIPAL");
       renderSalesTopTable("bottomSalesPrincipalTable", rows, "PRINCIPAL", "bottom");
       renderSalesTopTable("salesProductTable", rows, "DESKRIPSI_PRODUK");
+      renderSalesTopTable("bottomSalesProductTable", rows, "DESKRIPSI_PRODUK", "bottom");
     }
 
     function renderEmptyItemsTable() {
