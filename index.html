@@ -1597,18 +1597,14 @@ async function loadData() {
 
     rebuildLatestDeliveryIndex();
 
-    // Ambil tanggal update terakhir
-    const { data: latestData, error: latestError } = await supabaseClient
-      .from("data_supplier")
-      .select("LAST_DELIVERY_DATE")
-      .order("LAST_DELIVERY_DATE", { ascending: false })
-      .limit(1);
-
-    if (!latestError && latestData && latestData.length > 0) {
-      lastUpdate = latestData[0].LAST_DELIVERY_DATE;
-    } else {
-      lastUpdate = new Date().toISOString();
-    }
+    const updateDates = allData
+      .map(function(row) { return row.UPDATE_DATE || row.UPLOAD_DATE; })
+      .map(parseDate)
+      .filter(Boolean);
+    lastUpdate = updateDates.length
+      ? new Date(Math.max.apply(null, updateDates))
+      : localStorage.getItem("supplierLastUpdate") || null;
+    updateInfo();
 
     console.log("Last update:", lastUpdate);
 
@@ -2248,6 +2244,9 @@ async function loadData() {
       if (Math.abs(amount) >= 1000000000) {
         return "Rp " + (amount / 1000000000).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " M";
       }
+      if (Math.abs(amount) >= 1000000) {
+        return "Rp " + (amount / 1000000).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " Jt";
+      }
       return formatRupiah(amount);
     }
 
@@ -2455,6 +2454,9 @@ async function loadData() {
         }
 
         await loadSalesData();
+        lastUpdate = new Date().toISOString();
+        localStorage.setItem("supplierLastUpdate", lastUpdate);
+        updateInfo();
         renderSalesDashboard();
         showToast("✅ Berhasil upload " + salesRows.length.toLocaleString("id-ID") + " baris Sales.");
         alert("✅ Upload CSV Sales berhasil.\n\nTotal data: " + salesRows.length.toLocaleString("id-ID") + " baris.");
@@ -2490,9 +2492,9 @@ async function loadData() {
         return {
           label: year,
           data: trend.values[index].map(function(value, monthIndex) {
-            if (!percentMode) return value;
+            if (!percentMode) return value === 0 ? null : value;
             const sales = getSalesTrendRows(rows.filter(function(row) { return row.TAHUN === year; }), "SALES_NET").values[0][monthIndex];
-            return sales > 0 ? value / sales * 100 : 0;
+            return sales > 0 ? value / sales * 100 : null;
           }),
           borderColor: index === 0 ? color : "#f97316",
           backgroundColor: "transparent",
@@ -3419,6 +3421,7 @@ async function loadData() {
         rebuildLatestDeliveryIndex();
         lastUpdate = now;
         localStorage.setItem("supplierLastUpdate", now);
+        updateInfo();
 
         loadYearFilter();
         loadMonthFilter();
