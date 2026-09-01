@@ -2355,13 +2355,18 @@ async function loadData() {
     }
 
     function normalizeSalesRow(row) {
+      const year = String(getFlexible(row, ["TAHUN", "YEAR"], "")).trim();
+      const month = String(getFlexible(row, ["BULAN", "MONTH"], "")).trim();
       return {
         UNIT: String(getFlexible(row, ["UNIT"], "")).trim(),
         DC: String(getFlexible(row, ["DC"], "")).trim(),
-        TAHUN: String(getFlexible(row, ["TAHUN", "YEAR"], "")).trim(),
-        BULAN: String(getFlexible(row, ["BULAN", "MONTH"], "")).trim(),
+        TAHUN: year,
+        BULAN: month,
+        SALES_DATE: year && getSalesMonthNumber(month) <= 12
+          ? year + "-" + String(getSalesMonthNumber(month)).padStart(2, "0") + "-01"
+          : String(getFlexible(row, ["SALES DATE", "SALES_DATE"], "")).trim(),
         PLU: String(getFlexible(row, ["PLU"], "")).trim(),
-        DESKRIPSI_PRODUK: String(getFlexible(row, ["DESKRIPSI PRODUK", "DESKRIPSI_PRODUK", "PRODUCT DESCRIPTION"], "")).trim(),
+        DESKRIPSI_PRODUK: String(getFlexible(row, ["DESKRIPSI PRODUK", "DESKRIPSI_PRODUK", "PLU DESC", "PRODUCT DESCRIPTION"], "")).trim(),
         DIVISI: String(getFlexible(row, ["DIVISI", "DIVISION"], "")).trim(),
         DEPARTEMEN: String(getFlexible(row, ["DEPARTEMEN", "DEPARTMENT"], "")).trim(),
         KATEGORI: String(getFlexible(row, ["KATEGORI", "CATEGORY"], "")).trim(),
@@ -2375,13 +2380,17 @@ async function loadData() {
 
     function normalizeSalesDatabaseRow(row) {
       // Mendukung nama kolom PostgreSQL lowercase maupun nama kolom CSV/uppercase.
+      const salesDate = getFlexible(row, ["SALES_DATE", "sales_date", "SALES DATE"], "");
+      const year = String(getFlexible(row, ["TAHUN", "tahun", "YEAR", "year"], "")).trim();
+      const month = String(getFlexible(row, ["BULAN", "bulan", "MONTH", "month"], "")).trim();
+      const date = salesDate ? new Date(salesDate) : null;
       return {
         UNIT: String(getFlexible(row, ["UNIT", "unit"], "")).trim(),
         DC: String(getFlexible(row, ["DC", "dc"], "")).trim(),
-        TAHUN: String(getFlexible(row, ["TAHUN", "tahun", "YEAR", "year"], "")).trim(),
-        BULAN: String(getFlexible(row, ["BULAN", "bulan", "MONTH", "month"], "")).trim(),
+        TAHUN: year || (date && !isNaN(date.getTime()) ? String(date.getFullYear()) : ""),
+        BULAN: month || (date && !isNaN(date.getTime()) ? getSalesMonthLabels()[date.getMonth()] : ""),
         PLU: String(getFlexible(row, ["PLU", "plu"], "")).trim(),
-        DESKRIPSI_PRODUK: String(getFlexible(row, ["DESKRIPSI_PRODUK", "deskripsi_produk", "DESKRIPSI PRODUK", "product_description"], "")).trim(),
+        DESKRIPSI_PRODUK: String(getFlexible(row, ["DESKRIPSI_PRODUK", "deskripsi_produk", "DESKRIPSI PRODUK", "PLU DESC", "plu_desc", "product_description"], "")).trim(),
         DIVISI: String(getFlexible(row, ["DIVISI", "divisi", "DIVISION", "division"], "")).trim(),
         DEPARTEMEN: String(getFlexible(row, ["DEPARTEMEN", "departemen", "DEPARTMENT", "department"], "")).trim(),
         KATEGORI: String(getFlexible(row, ["KATEGORI", "kategori", "CATEGORY", "category"], "")).trim(),
@@ -2411,20 +2420,20 @@ async function loadData() {
         // Nama kolom mengikuti PostgreSQL/Supabase agar konsisten.
         const salesRows = normalized.map(function(row) {
           return {
-            unit: row.UNIT,
-            dc: row.DC,
-            tahun: row.TAHUN,
-            bulan: row.BULAN,
+            Unit: row.UNIT,
+            DC: row.DC,
+            Tahun: row.TAHUN,
+            sales_date: row.SALES_DATE || null,
             plu: row.PLU,
-            deskripsi_produk: row.DESKRIPSI_PRODUK,
-            divisi: row.DIVISI,
-            departemen: row.DEPARTEMEN,
-            kategori: row.KATEGORI,
-            brand: row.BRAND,
-            principal: row.PRINCIPAL,
-            sales_net: row.SALES_NET,
-            quantity: row.QUANTITY,
-            margin_rph: row.MARGIN_RPH
+            plu_desc: row.DESKRIPSI_PRODUK,
+            Divisi: row.DIVISI,
+            Departemen: row.DEPARTEMEN,
+            Kategori: row.KATEGORI,
+            Brand: row.BRAND,
+            Principal: row.PRINCIPAL,
+            sales_value: row.SALES_NET,
+            sales_qty: row.QUANTITY,
+            "Margin Rph": row.MARGIN_RPH
           };
         });
 
