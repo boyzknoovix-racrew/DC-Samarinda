@@ -8,6 +8,7 @@
   <script>
   const SUPABASE_URL = "https://rbapvcqslmnardkeywoe.supabase.co";
   const SUPABASE_KEY = "sb_publishable_rkIDfo0PSDacunJ4X9AUqQ_ZZHsFx7a";
+  // Publishable/anon key aman untuk frontend. JANGAN pernah memasukkan service_role key ke HTML.
 
   const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
@@ -16,6 +17,7 @@
 </script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="./logo-indomaret.png" />
   <title>SUPPLIER INFORMATION DASHBOARD</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -685,19 +687,77 @@
 
     .sales-filter-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(140px, 1fr));
+      grid-template-columns: repeat(5, minmax(160px, 1fr));
       gap: 12px;
-      align-items: end;
+      align-items: start;
     }
 
-    .sales-filter-grid select {
+    .sales-filter-grid .multi-filter {
       width: 100%;
-      min-height: 42px;
-      padding: 11px 13px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
+      min-height: 180px;
       background: #fff;
-      outline: none;
+      border: 1px solid #e7b39f;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.2);
+    }
+
+    .sales-filter-grid .multi-filter-button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 10px 12px;
+      border: 0;
+      background: #f7d7c8;
+      color: #4b2e24;
+      font-weight: bold;
+      text-align: left;
+      font-size: 12px;
+      border-bottom: 1px solid #e7b39f;
+      cursor: pointer;
+    }
+
+    .sales-filter-grid .multi-filter-button::after {
+      content: "☰";
+      font-size: 12px;
+      opacity: .8;
+    }
+
+    .sales-filter-grid .multi-filter-options {
+      position: static !important;
+      display: block !important;
+      max-height: 220px;
+      overflow-y: auto;
+      background: #fff;
+      border: 0;
+      box-shadow: none;
+      padding: 8px;
+      border-radius: 0;
+    }
+
+    .sales-filter-grid .multi-filter-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #1f2937;
+      background: #fdf2ee;
+      margin-bottom: 4px;
+      cursor: pointer;
+    }
+
+    .sales-filter-grid .multi-filter-option:hover {
+      background: #f8e1d5;
+    }
+
+    .sales-filter-grid .multi-filter-option input {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      accent-color: #d97706;
     }
 
     .sales-filter-grid select:focus {
@@ -741,7 +801,38 @@
     }
 
     .sales-table {
-      min-width: 900px;
+      width: 100%;
+      min-width: 0;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+
+    .sales-table th,
+    .sales-table td {
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: middle;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .sales-table th:nth-child(1),
+    .sales-table td:nth-child(1) {
+      width: 70px;
+      text-align: center;
+    }
+
+    .sales-table th:nth-child(2),
+    .sales-table td:nth-child(2) {
+      width: auto;
+    }
+
+    .sales-table th:nth-child(3),
+    .sales-table td:nth-child(3) {
+      width: 180px;
+      text-align: right;
+      white-space: nowrap;
     }
 
     .sales-chart-grid {
@@ -798,6 +889,15 @@
       max-height: 600px;
       border: 1px solid #e2e8f0;
       border-radius: 9px;
+    }
+
+    .sales-rank-table-wrapper {
+      overflow: visible;
+      max-height: none;
+    }
+
+    .sales-top-grid .table-panel {
+      min-width: 0;
     }
 
     table {
@@ -973,13 +1073,13 @@
 
       <div class="form-group">
         <label>Password</label>
-        <input type="password" id="password" placeholder="Masukkan password" />
+        <input type="password" id="password" autocomplete="current-password" placeholder="Masukkan password Supabase" />
       </div>
 
       <button class="btn btn-primary login-btn" onclick="login()">LOGIN</button>
 
       <div id="loginError" class="login-error">
-        Username atau password salah.
+        Email atau password salah. Silakan periksa akun Supabase Auth.
       </div>
     </div>
   </div>
@@ -989,8 +1089,11 @@
       <div class="header-brand">
         <img
           class="header-logo"
-          src="logo-indomaret.png"
+          src="./logo-indomaret.png"
           alt="Logo Indomaret"
+          loading="eager"
+          decoding="async"
+          onerror="this.onerror=null; this.src='./logo-indomaret.PNG';"
         />
         <div class="header-title">
           <h2>SUPPLIER INFORMATION DASHBOARD</h2>
@@ -1318,31 +1421,31 @@
             <h3>Filter Dashboard Sales</h3>
           </div>
           <div class="sales-filter-grid">
-            <select id="salesDCFilter" onchange="renderSalesDashboard()">
+            <select id="salesDCFilter" multiple size="5" onchange="renderSalesDashboard()">
               <option value="">All DC Name</option>
             </select>
-            <select id="salesYearFilter" onchange="renderSalesDashboard()">
+            <select id="salesYearFilter" multiple size="5" onchange="renderSalesDashboard()">
               <option value="">All Tahun</option>
             </select>
-            <select id="salesMonthFilter" onchange="renderSalesDashboard()">
+            <select id="salesMonthFilter" multiple size="5" onchange="renderSalesDashboard()">
               <option value="">All Bulan</option>
             </select>
-            <select id="salesDivisionFilter" onchange="renderSalesDashboard()">
+            <select id="salesDivisionFilter" multiple size="5" onchange="renderSalesDashboard()">
               <option value="">All Divisi</option>
             </select>
-            <select id="salesCategoryFilter" onchange="renderSalesDashboard()">
+            <select id="salesCategoryFilter" multiple size="5" onchange="renderSalesDashboard()">
               <option value="">All Kategori</option>
             </select>
-            <select id="salesPrincipalFilter" onchange="renderSalesDashboard()">
+            <select id="salesPrincipalFilter" multiple size="5" onchange="renderSalesDashboard()">
               <option value="">All Principal</option>
             </select>
-            <select id="salesDepartmentFilter" onchange="renderSalesDashboard()">
+            <select id="salesDepartmentFilter" multiple size="5" onchange="renderSalesDashboard()">
               <option value="">All Departemen</option>
             </select>
-            <select id="salesBrandFilter" onchange="renderSalesDashboard()">
+            <select id="salesBrandFilter" multiple size="5" onchange="renderSalesDashboard()">
               <option value="">All Brand</option>
             </select>
-            <select id="salesProductFilter" onchange="renderSalesDashboard()">
+            <select id="salesProductFilter" multiple size="5" onchange="renderSalesDashboard()">
               <option value="">All Deskripsi Produk</option>
             </select>
           </div>
@@ -1370,19 +1473,35 @@
         <div class="sales-top-grid">
           <div class="table-panel">
             <div class="table-header"><h3>Top 10 Principal by Sales Rp</h3></div>
-            <div class="table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>NAMA PRINCIPAL</th><th>SALES RP</th></tr></thead><tbody id="salesPrincipalTable"></tbody></table></div>
+            <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>NAMA PRINCIPAL</th><th>SALES RP</th></tr></thead><tbody id="salesPrincipalTable"></tbody></table></div>
           </div>
           <div class="table-panel">
             <div class="table-header"><h3>10 Principal Terbawah by Sales Rp</h3></div>
-            <div class="table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>NAMA PRINCIPAL</th><th>SALES RP</th></tr></thead><tbody id="bottomSalesPrincipalTable"></tbody></table></div>
+            <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>NAMA PRINCIPAL</th><th>SALES RP</th></tr></thead><tbody id="bottomSalesPrincipalTable"></tbody></table></div>
           </div>
           <div class="table-panel">
             <div class="table-header"><h3>Top 10 Produk by Sales Rp</h3></div>
-            <div class="table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>PRODUK</th><th>SALES RP</th></tr></thead><tbody id="salesProductTable"></tbody></table></div>
+            <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>PRODUK</th><th>SALES RP</th></tr></thead><tbody id="salesProductTable"></tbody></table></div>
           </div>
           <div class="table-panel">
             <div class="table-header"><h3>10 Produk Terbawah by Sales Rp</h3></div>
-            <div class="table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>PRODUK</th><th>SALES RP</th></tr></thead><tbody id="bottomSalesProductTable"></tbody></table></div>
+            <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>PRODUK</th><th>SALES RP</th></tr></thead><tbody id="bottomSalesProductTable"></tbody></table></div>
+          </div>
+          <div class="table-panel">
+            <div class="table-header"><h3>Top 10 Principal by Margin Rp</h3></div>
+            <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>NAMA PRINCIPAL</th><th>MARGIN RP</th></tr></thead><tbody id="marginPrincipalTable"></tbody></table></div>
+          </div>
+          <div class="table-panel">
+            <div class="table-header"><h3>Top 10 Principal Minus Margin</h3></div>
+            <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>NAMA PRINCIPAL</th><th>MINUS MARGIN RP</th></tr></thead><tbody id="minusMarginPrincipalTable"></tbody></table></div>
+          </div>
+          <div class="table-panel">
+            <div class="table-header"><h3>Top 10 Produk by Margin Rp</h3></div>
+            <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>PRODUK</th><th>MARGIN RP</th></tr></thead><tbody id="marginProductTable"></tbody></table></div>
+          </div>
+          <div class="table-panel">
+            <div class="table-header"><h3>Top 10 Produk Minus Margin</h3></div>
+            <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>PRODUK</th><th>MINUS MARGIN RP</th></tr></thead><tbody id="minusMarginProductTable"></tbody></table></div>
           </div>
         </div>
       </div>
@@ -1392,10 +1511,6 @@
   <div id="toast"></div>
 
   <script>
-    const ADMIN_USERNAME = "admin";
-    const ADMIN_PASSWORD = "magentha6767";
-    const DEFAULT_SUPPLIER_PASSWORD = "supplier123";
-
     const DB_NAME = "SupplierDashboardDB";
     const DB_VERSION = 2;
     const STORE_NAME = "records";
@@ -1625,7 +1740,7 @@ async function loadData() {
     const isPermissionDenied = e && (e.code === "42501" || /permission denied for table/i.test(e.message || ""));
     const isUnauthorized = e && (e.status === 401 || e.code === "401" || /invalid api key/i.test(e.message || ""));
     const message = isPermissionDenied
-      ? "Supabase terhubung, tetapi role anon belum memiliki izin SELECT pada tabel data_supplier. Jalankan GRANT dan policy RLS di Supabase SQL Editor."
+      ? "Login berhasil, tetapi akun authenticated belum memiliki izin SELECT pada tabel data_supplier. Periksa GRANT dan policy RLS di Supabase SQL Editor."
       : isUnauthorized
         ? "Supabase menolak API key (401). Pastikan SUPABASE_KEY adalah Publishable/anon key aktif dari Project Settings > API."
       : "Gagal mengambil data dari Supabase: " + (e.message || "kesalahan tidak diketahui");
@@ -1683,39 +1798,70 @@ async function loadData() {
       }
     }
 
+    async function resolveAuthAccount(user) {
+      const { data: account, error } = await supabaseClient
+        .from("supplier_accounts")
+        .select("supplier_code")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const { data: adminAccount, error: adminError } = await supabaseClient
+        .from("admin_users")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (adminError) throw adminError;
+
+      if (!account && !adminAccount) {
+        throw new Error("Akun belum diberi akses supplier atau admin.");
+      }
+
+      currentUser = account
+        ? normalizeSupplierCode(account.supplier_code)
+        : user.email;
+      currentRole = account ? "supplier" : "admin";
+    }
+
     async function login() {
-      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
       const error = document.getElementById("loginError");
       error.style.display = "none";
 
-      const normalizedUsername = normalizeSupplierCode(username);
-
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        currentUser = username;
-        currentRole = "admin";
-        await openApplication();
+      if (!email || !password) {
+        error.textContent = "Email dan password wajib diisi.";
+        error.style.display = "block";
         return;
       }
 
-      const supplier = data.find(function(item) {
-        const code = normalizeSupplierCode(item.SUPPLIER_CODE);
-        return code === normalizedUsername;
-      });
+      try {
+        const { data: authData, error: authError } =
+          await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+          });
 
-      if (supplier) {
-        const supplierPassword = String(supplier.SUPPLIER_PASSWORD || "").trim();
-        const validPassword = password === DEFAULT_SUPPLIER_PASSWORD || password === supplierPassword;
-
-        if (validPassword) {
-          currentUser = normalizeSupplierCode(supplier.SUPPLIER_CODE);
-          currentRole = "supplier";
-          await openApplication();
-          return;
+        if (authError) throw authError;
+        if (!authData || !authData.user) {
+          throw new Error("Login Supabase tidak menghasilkan user.");
         }
-      }
 
-      error.style.display = "block";
+        await resolveAuthAccount(authData.user);
+
+        await openApplication();
+        await loadData();
+        renderDashboard();
+      } catch (e) {
+        console.error("Supabase Auth login gagal:", e);
+        error.textContent =
+          e && e.message
+            ? "Login gagal: " + e.message
+            : "Email atau password salah. Silakan periksa akun Supabase Auth.";
+        error.style.display = "block";
+      }
     }
 
     async function openApplication() {
@@ -1728,7 +1874,8 @@ async function loadData() {
         currentRole === "admin" ? "block" : "none";
 
       const supplierFilter = document.getElementById("supplierFilter");
-      supplierFilter.style.display = currentRole === "supplier" ? "none" : "";
+      supplierFilter.style.display = "";
+
       loadYearFilter();
       loadMonthFilter();
       loadSupplierFilter();
@@ -1736,15 +1883,27 @@ async function loadData() {
       renderDashboard();
     }
 
-    function logout() {
+    async function logout() {
+      try {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
+      } catch (e) {
+        console.error("Logout Supabase gagal:", e);
+      }
+
       currentUser = null;
       currentRole = null;
+      data = [];
+      salesData = [];
+      filteredData = [];
+      latestDeliveryByPLU = new Map();
 
       document.getElementById("app").style.display = "none";
       document.getElementById("loginPage").style.display = "flex";
 
       document.getElementById("username").value = "";
       document.getElementById("password").value = "";
+      document.getElementById("loginError").style.display = "none";
     }
 
     function matchesFilters(item, excludedFilter) {
@@ -1846,15 +2005,22 @@ async function loadData() {
       document.getElementById(id).classList.toggle("open");
     }
 
+    document.addEventListener("click", function(event) {
+      if (!event.target.closest(".multi-filter")) {
+        document.querySelectorAll(".multi-filter.open").forEach(function(filter) {
+          filter.classList.remove("open");
+        });
+      }
+    });
+
     function setFilterOptions(select, firstOption, options, selectedValues) {
       const optionsContainer = select.querySelector(".multi-filter-options");
       const values = new Set(selectedValues || []);
       optionsContainer.innerHTML = options.map(function(option) {
         const checked = values.has(option.value) ? " checked" : "";
         const allOption = option.all ? " data-all-option=\"true\"" : "";
-        const changeHandler = option.all ? "handleAllMonthSelection(this)" : "applyFilters()";
         return '<label class="multi-filter-option"><input type="checkbox" value="' +
-          safe(option.value) + '"' + checked + allOption + ' onchange="' + changeHandler + '">' +
+          safe(option.value) + '"' + checked + allOption + ' onchange="handleMonthCheckboxSelection(this)">' +
           safe(option.label) + '</label>';
       }).join("");
       if (!selectedValues.length && options.some(function(option) { return option.all; })) {
@@ -1910,11 +2076,20 @@ async function loadData() {
       setFilterOptions(sel, "Bulan", options, selectedMonth);
     }
 
-    function handleAllMonthSelection(input) {
-      if (input.checked) {
-        document.querySelectorAll("#monthFilter input[type=checkbox]:not([data-all-option])")
-          .forEach(function(monthInput) { monthInput.checked = false; });
+    function handleMonthCheckboxSelection(input) {
+      const allInput = document.querySelector("#monthFilter input[data-all-option]");
+      const monthInputs = document.querySelectorAll("#monthFilter input[type=checkbox]:not([data-all-option])");
+
+      if (input.dataset.allOption === "true") {
+        if (input.checked) {
+          monthInputs.forEach(function(monthInput) { monthInput.checked = false; });
+        }
+      } else if (input.checked) {
+        if (allInput) allInput.checked = false;
+      } else if (!Array.from(monthInputs).some(function(monthInput) { return monthInput.checked; })) {
+        if (allInput) allInput.checked = true;
       }
+
       applyFilters();
     }
 
@@ -2176,49 +2351,65 @@ async function loadData() {
       });
     }
 
+    function getSelectedValuesForSelect(selectId) {
+      const element = document.getElementById(selectId);
+      if (!element) return [];
+
+      if (element.tagName === "SELECT" && element.multiple) {
+        return Array.from(element.selectedOptions).map(function(option) {
+          return String(option.value || "").trim();
+        }).filter(function(value) {
+          return value && value !== "__ALL__";
+        });
+      }
+
+      if (element.tagName === "SELECT") {
+        const value = String(element.value || "").trim();
+        return value ? [value] : [];
+      }
+
+      return [];
+    }
+
+    function loadSalesSelect(id, values, selectedValues) {
+      const select = document.getElementById(id);
+      if (!select || !select.multiple) return;
+
+      const selectedSet = new Set((selectedValues || []).filter(Boolean));
+      const sortedValues = Array.from(new Set(values)).sort(function(a, b) {
+        return String(a).localeCompare(String(b), "id", { sensitivity: "base" });
+      });
+
+      select.innerHTML = sortedValues.map(function(value) {
+        return '<option value="' + safe(value) + '"' + (selectedSet.has(value) ? ' selected' : '') + '>' + safe(value) + '</option>';
+      }).join("");
+    }
+
     function getSalesFilteredData() {
       const visibleData = getSalesVisibleData();
-      const dc = document.getElementById("salesDCFilter").value;
-      const year = document.getElementById("salesYearFilter").value;
-      const month = document.getElementById("salesMonthFilter").value;
-      const division = document.getElementById("salesDivisionFilter").value;
-      const category = document.getElementById("salesCategoryFilter").value;
-      const principal = document.getElementById("salesPrincipalFilter").value;
-      const department = document.getElementById("salesDepartmentFilter").value;
-      const brand = document.getElementById("salesBrandFilter").value;
-      const product = document.getElementById("salesProductFilter").value;
+      const salesFilterConfig = [
+        { id: "salesDCFilter", field: "DC" },
+        { id: "salesYearFilter", field: "TAHUN" },
+        { id: "salesMonthFilter", field: "BULAN" },
+        { id: "salesDivisionFilter", field: "DIVISI" },
+        { id: "salesCategoryFilter", field: "KATEGORI" },
+        { id: "salesPrincipalFilter", field: "PRINCIPAL" },
+        { id: "salesDepartmentFilter", field: "DEPARTEMEN" },
+        { id: "salesBrandFilter", field: "BRAND" },
+        { id: "salesProductFilter", field: "DESKRIPSI_PRODUK" }
+      ];
 
       return visibleData.filter(function(row) {
-        return (!dc || row.DC === dc) &&
-          (!year || row.TAHUN === year) &&
-          (!month || row.BULAN === month) &&
-          (!division || row.DIVISI === division) &&
-          (!category || row.KATEGORI === category) &&
-          (!principal || row.PRINCIPAL === principal) &&
-          (!department || row.DEPARTEMEN === department) &&
-          (!brand || row.BRAND === brand) &&
-          (!product || row.DESKRIPSI_PRODUK === product);
+        return salesFilterConfig.every(function(config) {
+          const selectedValues = getSelectedValuesForSelect(config.id);
+          if (!selectedValues.length) return true;
+          const rowValue = String(row[config.field] || "").trim();
+          return selectedValues.includes(rowValue);
+        });
       });
     }
 
-    function loadSalesSelect(id, values, firstLabel, selected) {
-      const select = document.getElementById(id);
-      select.innerHTML = '<option value="">' + firstLabel + '</option>' + values.map(function(value) {
-        return '<option value="' + safe(value) + '">' + safe(value) + '</option>';
-      }).join("");
-      select.value = values.includes(selected) ? selected : "";
-    }
-
     function loadSalesFilters() {
-      const dc = document.getElementById("salesDCFilter").value;
-      const year = document.getElementById("salesYearFilter").value;
-      const month = document.getElementById("salesMonthFilter").value;
-      const division = document.getElementById("salesDivisionFilter").value;
-      const category = document.getElementById("salesCategoryFilter").value;
-      const principal = document.getElementById("salesPrincipalFilter").value;
-      const department = document.getElementById("salesDepartmentFilter").value;
-      const brand = document.getElementById("salesBrandFilter").value;
-      const product = document.getElementById("salesProductFilter").value;
       const values = function(field) {
         return Array.from(new Set(getSalesVisibleData().map(function(row) {
           return String(row[field] || "").trim();
@@ -2227,19 +2418,27 @@ async function loadData() {
         })));
       };
 
-      loadSalesSelect("salesDCFilter", values("DC").sort(), "All DC Name", dc);
-      loadSalesSelect("salesYearFilter", values("TAHUN").sort(function(a, b) {
-        return Number(b) - Number(a);
-      }), "All Tahun", year);
-      loadSalesSelect("salesMonthFilter", values("BULAN").sort(function(a, b) {
-        return getSalesMonthNumber(a) - getSalesMonthNumber(b);
-      }), "All Bulan", month);
-      loadSalesSelect("salesDivisionFilter", values("DIVISI").sort(), "All Divisi", division);
-      loadSalesSelect("salesCategoryFilter", values("KATEGORI").sort(), "All Kategori", category);
-      loadSalesSelect("salesPrincipalFilter", values("PRINCIPAL").sort(), "All Principal", principal);
-      loadSalesSelect("salesDepartmentFilter", values("DEPARTEMEN").sort(), "All Departemen", department);
-      loadSalesSelect("salesBrandFilter", values("BRAND").sort(), "All Brand", brand);
-      loadSalesSelect("salesProductFilter", values("DESKRIPSI_PRODUK").sort(), "All Deskripsi Produk", product);
+      const salesFilterConfig = [
+        { id: "salesDCFilter", field: "DC" },
+        { id: "salesYearFilter", field: "TAHUN" },
+        { id: "salesMonthFilter", field: "BULAN" },
+        { id: "salesDivisionFilter", field: "DIVISI" },
+        { id: "salesCategoryFilter", field: "KATEGORI" },
+        { id: "salesPrincipalFilter", field: "PRINCIPAL" },
+        { id: "salesDepartmentFilter", field: "DEPARTEMEN" },
+        { id: "salesBrandFilter", field: "BRAND" },
+        { id: "salesProductFilter", field: "DESKRIPSI_PRODUK" }
+      ];
+
+      salesFilterConfig.forEach(function(config) {
+        const currentValues = getSelectedValuesForSelect(config.id);
+        const dataValues = values(config.field).sort(function(a, b) {
+          if (config.field === "TAHUN") return Number(b) - Number(a);
+          if (config.field === "BULAN") return getSalesMonthNumber(a) - getSalesMonthNumber(b);
+          return String(a).localeCompare(String(b), "id", { sensitivity: "base" });
+        });
+        loadSalesSelect(config.id, dataValues, currentValues);
+      });
     }
 
     function getSalesMonthNumber(month) {
@@ -2560,16 +2759,32 @@ async function loadData() {
       });
     }
 
-    function renderSalesTopTable(id, rows, field, direction) {
+    function renderSalesTopTable(id, rows, field, direction, valueField) {
       const grouped = new Map();
+      const metricField = valueField || "SALES_NET";
+
       rows.forEach(function(row) {
         const name = String(row[field] || "Tanpa nama").trim();
-        grouped.set(name, (grouped.get(name) || 0) + parseNumber(row.SALES_NET));
+        if (!name) return;
+        grouped.set(name, (grouped.get(name) || 0) + parseNumber(row[metricField]));
       });
-      const result = Array.from(grouped.entries()).sort(function(a, b) {
-        return direction === "bottom" ? a[1] - b[1] : b[1] - a[1];
-      }).slice(0, 10);
-      document.getElementById(id).innerHTML = result.length ? result.map(function(item, index) {
+
+      let result = Array.from(grouped.entries());
+
+      if (direction === "negative") {
+        result = result.filter(function(item) {
+          return item[1] < 0;
+        }).sort(function(a, b) {
+          return a[1] - b[1];
+        });
+      } else {
+        result = result.sort(function(a, b) {
+          return direction === "bottom" ? a[1] - b[1] : b[1] - a[1];
+        });
+      }
+
+      const limited = result.slice(0, 10);
+      document.getElementById(id).innerHTML = limited.length ? limited.map(function(item, index) {
         return "<tr><td>" + (index + 1) + "</td><td>" + safe(item[0]) + "</td><td>" + formatRupiah(item[1]) + "</td></tr>";
       }).join("") : '<tr><td class="sales-empty" colspan="3">Belum ada data sales.</td></tr>';
     }
@@ -2679,6 +2894,10 @@ async function loadData() {
       renderSalesTopTable("bottomSalesPrincipalTable", rows, "PRINCIPAL", "bottom");
       renderSalesTopTable("salesProductTable", rows, "DESKRIPSI_PRODUK");
       renderSalesTopTable("bottomSalesProductTable", rows, "DESKRIPSI_PRODUK", "bottom");
+      renderSalesTopTable("marginPrincipalTable", rows, "PRINCIPAL", "positive", "MARGIN_RPH");
+      renderSalesTopTable("minusMarginPrincipalTable", rows, "PRINCIPAL", "negative", "MARGIN_RPH");
+      renderSalesTopTable("marginProductTable", rows, "DESKRIPSI_PRODUK", "positive", "MARGIN_RPH");
+      renderSalesTopTable("minusMarginProductTable", rows, "DESKRIPSI_PRODUK", "negative", "MARGIN_RPH");
     }
 
     function renderEmptyItemsTable() {
@@ -4079,11 +4298,41 @@ async function loadData() {
     (async function() {
       try {
         await openDatabase();
-        await loadData();
-        console.log("Supplier Dashboard siap. Total data:", data.length);
+
+        // Jangan membaca data Supabase sebelum user terautentikasi.
+        const { data: sessionData, error: sessionError } =
+          await supabaseClient.auth.getSession();
+
+        if (sessionError) throw sessionError;
+
+        if (sessionData && sessionData.session && sessionData.session.user) {
+          await resolveAuthAccount(sessionData.session.user);
+          await openApplication();
+          await loadData();
+          renderDashboard();
+          console.log("Session Supabase aktif. Total data:", data.length);
+        } else {
+          document.getElementById("app").style.display = "none";
+          document.getElementById("loginPage").style.display = "flex";
+          console.log("Belum login. Data Supabase belum dimuat.");
+        }
+
+        // Menjaga tampilan tetap sinkron jika session berubah/expired.
+        supabaseClient.auth.onAuthStateChange(async function(event, session) {
+          if (event === "SIGNED_OUT" || !session) {
+            currentUser = null;
+            currentRole = null;
+            data = [];
+            salesData = [];
+            document.getElementById("app").style.display = "none";
+            document.getElementById("loginPage").style.display = "flex";
+          }
+        });
       } catch (e) {
         console.error(e);
-        alert("Database browser gagal dibuka. Coba Google Chrome atau Microsoft Edge.");
+        document.getElementById("app").style.display = "none";
+        document.getElementById("loginPage").style.display = "flex";
+        alert("Gagal memulai Dashboard. Periksa koneksi Supabase dan konfigurasi Auth.");
       }
     })();
   </script>
