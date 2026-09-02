@@ -2990,31 +2990,11 @@ async function syncSupplierDataToLocal() {
         });
       }
 
-      const count = Math.min(10, result.length);
-      const items = [];
-      for (let i = 0; i < count; i++) {
-        items.push({ name: result[i][0], value: result[i][1], rank: i + 1 });
-      }
-
-      let ordered = items;
-      // Pola zig-zag maks-min untuk tabel Top 10:
-      // baris 1 = tertinggi, baris 2 = terendah, baris 3 = tertinggi ke-2,
-      // baris 4 = terendah ke-2, dst. Tabel "Terbawah" (bottom) tetap urut naik.
-      const useZigzag = id.indexOf("bottom") === -1;
-      if (useZigzag && count > 2) {
-        ordered = [];
-        for (let i = 0; i < count; i++) {
-          ordered.push(
-            i % 2 === 0
-              ? items[i / 2]
-              : items[count - 1 - Math.floor(i / 2)]
-          );
-        }
-      }
-
-      document.getElementById(id).innerHTML = ordered.length ? ordered.map(function(item) {
-        const rowClass = item.rank <= 3 ? " rank-" + item.rank : "";
-        return "<tr class=\"" + rowClass.trim() + "\"><td><span class=\"rank-badge\">" + item.rank + "</span></td><td>" + safe(item.name) + "</td><td>" + formatRupiah(item.value) + "</td></tr>";
+      const limited = result.slice(0, 10);
+      document.getElementById(id).innerHTML = limited.length ? limited.map(function(item, index) {
+        const rank = index + 1;
+        const rowClass = rank <= 3 ? " rank-" + rank : "";
+        return "<tr class=\"" + rowClass.trim() + "\"><td><span class=\"rank-badge\">" + rank + "</span></td><td>" + safe(item[0]) + "</td><td>" + formatRupiah(item[1]) + "</td></tr>";
       }).join("") : '<tr><td class="sales-empty" colspan="3">Belum ada data sales.</td></tr>';
     }
 
