@@ -791,19 +791,30 @@
 
     .sales-card {
       background: #fff;
-      border-left: 5px solid #0891b2;
-      border-radius: 12px;
-      padding: 18px;
+      border-radius: 14px;
+      padding: 16px 16px 12px;
       box-shadow: 0 3px 12px rgba(0,0,0,.06);
+      border-top: 4px solid #0891b2;
+      transition: box-shadow .2s ease, transform .2s ease;
     }
 
-    .sales-card:nth-child(2) { border-left-color: #f97316; }
-    .sales-card:nth-child(3) { border-left-color: #7c3aed; }
+    .sales-card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,.1);
+      transform: translateY(-2px);
+    }
+
+    .sales-card:nth-child(2) { border-top-color: #f97316; }
+    .sales-card:nth-child(3) { border-top-color: #7c3aed; }
 
     .sales-card-title {
-      color: #64748b;
+      color: #0f172a;
       font-size: 12px;
-      margin-bottom: 8px;
+      font-weight: bold;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #e2e8f0;
     }
 
     .sales-card-value {
@@ -860,23 +871,30 @@
 
     .sales-chart-box {
       min-width: 0;
-      padding: 14px;
-      border: 1px solid #dbe3ec;
-      border-radius: 8px;
+      padding: 0;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
       background: #fff;
+      overflow: hidden;
+      box-shadow: 0 3px 12px rgba(0,0,0,.05);
     }
 
     .sales-chart-box h4 {
-      margin: 0 0 8px;
-      padding: 7px 10px;
-      background: #0f2f6f;
+      margin: 0;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, #0f2f6f, #1e40af);
       color: #fff;
-      font-size: 12px;
-      text-align: center;
+      font-size: 12.5px;
+      font-weight: bold;
+      letter-spacing: .3px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .sales-chart-box .chart-container {
       height: 260px;
+      padding: 10px 8px 6px;
     }
 
     .sales-top-grid {
@@ -889,6 +907,40 @@
       padding: 30px;
       color: #64748b;
       text-align: center;
+    }
+
+    .sales-table tbody tr.rank-1 td { background: #fef9c3; }
+    .sales-table tbody tr.rank-2 td { background: #f1f5f9; }
+    .sales-table tbody tr.rank-3 td { background: #ffedd5; }
+
+    .sales-table .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0f172a;
+      color: #fff;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .sales-table tbody tr.rank-1 .rank-badge { background: #a16207; }
+    .sales-table tbody tr.rank-2 .rank-badge { background: #64748b; }
+    .sales-table tbody tr.rank-3 .rank-badge { background: #9a3412; }
+
+    .chart-header #salesDataInfo {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 11.5px;
+      color: #0f172a;
+      font-weight: bold;
+      white-space: normal;
+      text-align: right;
+      max-width: 460px;
     }
 
     .table-header {
@@ -1536,12 +1588,12 @@
             <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>NAMA PRINCIPAL</th><th>MARGIN RP</th></tr></thead><tbody id="marginPrincipalTable"></tbody></table></div>
           </div>
           <div class="table-panel">
-            <div class="table-header"><h3>Top 10 Principal Minus Margin</h3></div>
-            <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>NAMA PRINCIPAL</th><th>MINUS MARGIN RP</th></tr></thead><tbody id="minusMarginPrincipalTable"></tbody></table></div>
-          </div>
-          <div class="table-panel">
             <div class="table-header"><h3>Top 10 Produk by Margin Rp</h3></div>
             <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>PRODUK</th><th>MARGIN RP</th></tr></thead><tbody id="marginProductTable"></tbody></table></div>
+          </div>
+          <div class="table-panel">
+            <div class="table-header"><h3>Top 10 Principal Minus Margin</h3></div>
+            <div class="table-wrapper sales-rank-table-wrapper"><table class="sales-table"><thead><tr><th>RANK</th><th>NAMA PRINCIPAL</th><th>MINUS MARGIN RP</th></tr></thead><tbody id="minusMarginPrincipalTable"></tbody></table></div>
           </div>
           <div class="table-panel">
             <div class="table-header"><h3>Top 10 Produk Minus Margin</h3></div>
@@ -2814,11 +2866,28 @@ async function syncSupplierDataToLocal() {
       }) };
     }
 
+    function hexToRgba(hex, alpha) {
+      const value = String(hex || "#0f172a").replace("#", "");
+      const bigint = parseInt(value, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+    }
+
     function createSalesTrendChart(id, rows, field, percentMode, color) {
       const canvas = document.getElementById(id);
+      if (!canvas) return null;
       const currencyMode = field !== "QUANTITY";
       const trend = getSalesTrendRows(rows, field);
+      const ctx = canvas.getContext("2d");
+      const palette = [color, "#f97316", "#8b5cf6", "#10b981", "#ef4444"];
+
       const datasets = trend.years.map(function(year, index) {
+        const lineColor = palette[index % palette.length];
+        const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+        gradient.addColorStop(0, hexToRgba(lineColor, 0.22));
+        gradient.addColorStop(1, hexToRgba(lineColor, 0));
         return {
           label: year,
           data: trend.values[index].map(function(value, monthIndex) {
@@ -2826,32 +2895,72 @@ async function syncSupplierDataToLocal() {
             const sales = getSalesTrendRows(rows.filter(function(row) { return row.TAHUN === year; }), "SALES_NET").values[0][monthIndex];
             return sales > 0 ? value / sales * 100 : null;
           }),
-          borderColor: index === 0 ? color : "#f97316",
-          backgroundColor: "transparent",
-          borderWidth: 2,
-          pointRadius: 2,
-          tension: .25
+          borderColor: lineColor,
+          backgroundColor: gradient,
+          fill: true,
+          borderWidth: 2.5,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          pointBackgroundColor: "#fff",
+          pointBorderColor: lineColor,
+          pointBorderWidth: 2,
+          tension: .35
         };
       });
-      return new Chart(canvas.getContext("2d"), {
+
+      return new Chart(ctx, {
         type: "line",
         data: { labels: trend.labels, datasets: datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: 700, easing: "easeOutQuart" },
+          interaction: { mode: "index", intersect: false },
           plugins: {
-            legend: { position: "bottom", labels: { boxWidth: 18, font: { size: 10 } } },
-            tooltip: { callbacks: { label: function(context) {
-              if (context.raw === null || context.raw === undefined) return "";
-              return percentMode ? context.raw.toFixed(2) + "%" :
-                currencyMode ? formatRupiah(context.raw) : formatNumber(context.raw);
-            } } }
+            legend: {
+              position: "bottom",
+              labels: { boxWidth: 18, boxHeight: 3, usePointStyle: true, pointStyle: "line", font: { size: 11, weight: "bold" }, color: "#334155", padding: 12 }
+            },
+            tooltip: {
+              backgroundColor: "rgba(15,23,42,.95)",
+              padding: 10,
+              titleFont: { size: 12, weight: "bold" },
+              bodyFont: { size: 11 },
+              displayColors: true,
+              callbacks: {
+                title: function(items) {
+                  if (!items.length) return "";
+                  const i = items[0].dataIndex;
+                  const year = items[0].dataset.label;
+                  return (trend.labels[i] || "") + " " + year;
+                },
+                label: function(context) {
+                  if (context.raw === null || context.raw === undefined) return "";
+                  const value = percentMode ? context.raw.toFixed(2) + "%" :
+                    currencyMode ? formatRupiah(context.raw) : formatNumber(context.raw);
+                  return context.dataset.label + ": " + value;
+                }
+              }
+            }
           },
           scales: {
-            y: { beginAtZero: true, ticks: { callback: function(value) {
-                return percentMode ? value + "%" : currencyMode ? formatCompactSalesValue(value) : formatNumber(value);
-            } } },
-            x: { grid: { display: false } }
+            y: {
+              beginAtZero: true,
+              grid: { color: "rgba(148,163,184,.16)" },
+              border: { display: false },
+              ticks: {
+                color: "#64748b",
+                font: { size: 10 },
+                callback: function(value) {
+                  return percentMode ? value + "%" : currencyMode ? formatCompactSalesValue(value) : formatNumber(value);
+                }
+              }
+            },
+            x: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: { color: "#64748b", font: { size: 10 } }
+            }
           }
         }
       });
@@ -2881,9 +2990,31 @@ async function syncSupplierDataToLocal() {
         });
       }
 
-      const limited = result.slice(0, 10);
-      document.getElementById(id).innerHTML = limited.length ? limited.map(function(item, index) {
-        return "<tr><td>" + (index + 1) + "</td><td>" + safe(item[0]) + "</td><td>" + formatRupiah(item[1]) + "</td></tr>";
+      const count = Math.min(10, result.length);
+      const items = [];
+      for (let i = 0; i < count; i++) {
+        items.push({ name: result[i][0], value: result[i][1], rank: i + 1 });
+      }
+
+      let ordered = items;
+      // Pola zig-zag maks-min untuk tabel Top 10:
+      // baris 1 = tertinggi, baris 2 = terendah, baris 3 = tertinggi ke-2,
+      // baris 4 = terendah ke-2, dst. Tabel "Terbawah" (bottom) tetap urut naik.
+      const useZigzag = id.indexOf("bottom") === -1;
+      if (useZigzag && count > 2) {
+        ordered = [];
+        for (let i = 0; i < count; i++) {
+          ordered.push(
+            i % 2 === 0
+              ? items[i / 2]
+              : items[count - 1 - Math.floor(i / 2)]
+          );
+        }
+      }
+
+      document.getElementById(id).innerHTML = ordered.length ? ordered.map(function(item) {
+        const rowClass = item.rank <= 3 ? " rank-" + item.rank : "";
+        return "<tr class=\"" + rowClass.trim() + "\"><td><span class=\"rank-badge\">" + item.rank + "</span></td><td>" + safe(item.name) + "</td><td>" + formatRupiah(item.value) + "</td></tr>";
       }).join("") : '<tr><td class="sales-empty" colspan="3">Belum ada data sales.</td></tr>';
     }
 
@@ -2908,30 +3039,52 @@ async function syncSupplierDataToLocal() {
       const percentMode = mode === "marginPercent";
       const currencyMode = !percentMode;
       const canvas = document.getElementById(id);
+      if (!canvas) return null;
+      const ctx = canvas.getContext("2d");
 
-      return new Chart(canvas.getContext("2d"), {
+      const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(1, hexToRgba(color, 0.22));
+
+      const seriesName = mode === "marginPercent" ? "Margin %" : mode === "margin" ? "Margin" : "Sales";
+
+      return new Chart(ctx, {
         type: "bar",
         data: {
-          labels: years.length ? years : ["-"] ,
+          labels: years.length ? years : ["-"],
           datasets: [{
             data: values.length ? values : [0],
-            backgroundColor: color,
-            borderColor: color,
-            borderWidth: 1,
-            borderRadius: 4,
-            maxBarThickness: 48
+            backgroundColor: gradient,
+            hoverBackgroundColor: color,
+            borderColor: "transparent",
+            borderRadius: 8,
+            borderSkipped: false,
+            maxBarThickness: 52
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: 700, easing: "easeOutQuart" },
           plugins: {
             legend: { display: false },
-            tooltip: { callbacks: { label: function(context) {
-              if (context.raw === null || context.raw === undefined) return "";
-              return percentMode ? context.raw.toFixed(2) + "%" :
-                currencyMode ? formatRupiah(context.raw) : formatNumber(context.raw);
-            } } },
+            tooltip: {
+              backgroundColor: "rgba(15,23,42,.95)",
+              padding: 12,
+              titleFont: { size: 13, weight: "bold" },
+              bodyFont: { size: 12 },
+              displayColors: false,
+              callbacks: {
+                title: function(items) {
+                  if (!items.length) return "";
+                  return "Tahun " + items[0].label;
+                },
+                label: function(context) {
+                  if (context.raw === null || context.raw === undefined) return "";
+                  return seriesName + ": " + (percentMode ? context.raw.toFixed(2) + "%" : currencyMode ? formatRupiah(context.raw) : formatNumber(context.raw));
+                }
+              }
+            },
             datalabels: {
               display: function(context) {
                 return context.dataset.data[context.dataIndex] !== null &&
@@ -2940,27 +3093,36 @@ async function syncSupplierDataToLocal() {
               },
               anchor: "end",
               align: "top",
-              offset: 3,
+              offset: 4,
               clamp: true,
               clip: false,
-              color: "#0f2f6f",
-              font: { size: 9, weight: "bold" },
+              color: "#334155",
+              font: { size: 10, weight: "bold" },
               formatter: function(value) {
                 return value === null || value === undefined || value === 0 ? "" :
                   percentMode ? value.toFixed(2) + "%" : formatCompactSalesValue(value);
               }
             }
           },
-          layout: { padding: { top: 18, right: 8, left: 8 } },
+          layout: { padding: { top: 22, right: 8, left: 8 } },
           scales: {
             y: {
               beginAtZero: true,
-              title: { display: false },
-              ticks: { callback: function(value) {
-                return percentMode ? value + "%" : formatCompactSalesValue(value);
-              } }
+              grid: { color: "rgba(148,163,184,.16)" },
+              border: { display: false },
+              ticks: {
+                color: "#64748b",
+                font: { size: 10 },
+                callback: function(value) {
+                  return percentMode ? value + "%" : formatCompactSalesValue(value);
+                }
+              }
             },
-            x: { title: { display: false }, grid: { display: false } }
+            x: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: { color: "#334155", font: { size: 11, weight: "bold" } }
+            }
           }
         },
         plugins: [ChartDataLabels]
@@ -2976,14 +3138,17 @@ async function syncSupplierDataToLocal() {
         return result;
       }, { value: 0, margin: 0 });
 
-      document.getElementById("salesDataInfo").textContent = rows.length.toLocaleString("id-ID") + " baris data";
+      const marginPct = totals.value ? (totals.margin / totals.value * 100) : 0;
+      document.getElementById("salesDataInfo").textContent =
+        rows.length.toLocaleString("id-ID") + " baris • Sales " + formatRupiah(totals.value) +
+        " • Margin " + formatRupiah(totals.margin) + " (" + marginPct.toFixed(1) + "%)";
       ["salesYearComparisonChart", "marginYearComparisonChart", "marginPercentYearComparisonChart", "salesTrendChart", "salesQtyChart", "salesMarginChart", "salesMarginPercentChart"].forEach(function(id) {
         const chart = Chart.getChart(id);
         if (chart) chart.destroy();
       });
       createSalesYearComparisonChart("salesYearComparisonChart", rows, "sales", "#0f2f6f");
       createSalesYearComparisonChart("marginYearComparisonChart", rows, "margin", "#f97316");
-      createSalesYearComparisonChart("marginPercentYearComparisonChart", rows, "marginPercent", "#0f2f6f");
+      createSalesYearComparisonChart("marginPercentYearComparisonChart", rows, "marginPercent", "#7c3aed");
       salesTrendChart = createSalesTrendChart("salesTrendChart", rows, "SALES_NET", false, "#0f4c81");
       salesQtyChart = createSalesTrendChart("salesQtyChart", rows, "QUANTITY", false, "#0f4c81");
       salesMarginChart = createSalesTrendChart("salesMarginChart", rows, "MARGIN_RPH", false, "#0f4c81");
