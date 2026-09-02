@@ -765,6 +765,23 @@
       box-shadow: 0 0 0 3px rgba(8,145,178,.1);
     }
 
+    .sales-filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sales-filter-field label {
+      font-size: 12px;
+      font-weight: bold;
+      color: #475569;
+    }
+
+    .sales-filter-field select {
+      width: 100%;
+      min-height: 140px;
+    }
+
     .sales-cards {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1421,33 +1438,60 @@
             <h3>Filter Dashboard Sales</h3>
           </div>
           <div class="sales-filter-grid">
-            <select id="salesDCFilter" multiple size="5" onchange="renderSalesDashboard()">
-              <option value="">All DC Name</option>
-            </select>
-            <select id="salesYearFilter" multiple size="5" onchange="renderSalesDashboard()">
-              <option value="">All Tahun</option>
-            </select>
-            <select id="salesMonthFilter" multiple size="5" onchange="renderSalesDashboard()">
-              <option value="">All Bulan</option>
-            </select>
-            <select id="salesDivisionFilter" multiple size="5" onchange="renderSalesDashboard()">
-              <option value="">All Divisi</option>
-            </select>
-            <select id="salesCategoryFilter" multiple size="5" onchange="renderSalesDashboard()">
-              <option value="">All Kategori</option>
-            </select>
-            <select id="salesPrincipalFilter" multiple size="5" onchange="renderSalesDashboard()">
-              <option value="">All Principal</option>
-            </select>
-            <select id="salesDepartmentFilter" multiple size="5" onchange="renderSalesDashboard()">
-              <option value="">All Departemen</option>
-            </select>
-            <select id="salesBrandFilter" multiple size="5" onchange="renderSalesDashboard()">
-              <option value="">All Brand</option>
-            </select>
-            <select id="salesProductFilter" multiple size="5" onchange="renderSalesDashboard()">
-              <option value="">All Deskripsi Produk</option>
-            </select>
+            <div class="sales-filter-field">
+              <label for="salesDCFilter">DC Name</label>
+              <select id="salesDCFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
+                <option value="__ALL__" selected>All DC Name</option>
+              </select>
+            </div>
+            <div class="sales-filter-field">
+              <label for="salesYearFilter">Tahun</label>
+              <select id="salesYearFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
+                <option value="__ALL__" selected>All Tahun</option>
+              </select>
+            </div>
+            <div class="sales-filter-field">
+              <label for="salesMonthFilter">Bulan</label>
+              <select id="salesMonthFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
+                <option value="__ALL__" selected>All Bulan</option>
+              </select>
+            </div>
+            <div class="sales-filter-field">
+              <label for="salesDivisionFilter">Divisi</label>
+              <select id="salesDivisionFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
+                <option value="__ALL__" selected>All Divisi</option>
+              </select>
+            </div>
+            <div class="sales-filter-field">
+              <label for="salesCategoryFilter">Kategori</label>
+              <select id="salesCategoryFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
+                <option value="__ALL__" selected>All Kategori</option>
+              </select>
+            </div>
+            <div class="sales-filter-field">
+              <label for="salesPrincipalFilter">Principal</label>
+              <select id="salesPrincipalFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
+                <option value="__ALL__" selected>All Principal</option>
+              </select>
+            </div>
+            <div class="sales-filter-field">
+              <label for="salesDepartmentFilter">Departemen</label>
+              <select id="salesDepartmentFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
+                <option value="__ALL__" selected>All Departemen</option>
+              </select>
+            </div>
+            <div class="sales-filter-field">
+              <label for="salesBrandFilter">Brand</label>
+              <select id="salesBrandFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
+                <option value="__ALL__" selected>All Brand</option>
+              </select>
+            </div>
+            <div class="sales-filter-field">
+              <label for="salesProductFilter">Deskripsi Produk</label>
+              <select id="salesProductFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
+                <option value="__ALL__" selected>All Deskripsi Produk</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -1672,7 +1716,23 @@
       });
     }
 
-async function loadData() {
+async function syncSupplierDataToLocal() {
+      await deleteAllRecords();
+      for (let i = 0; i < data.length; i += 2000) {
+        await saveManyRecords(data.slice(i, i + 2000));
+      }
+      data = await getAllData();
+    }
+
+    async function syncSalesDataToLocal() {
+      await deleteAllSalesRecords();
+      for (let i = 0; i < salesData.length; i += 2000) {
+        await saveManySalesRecords(salesData.slice(i, i + 2000));
+      }
+      salesData = await getAllSalesData();
+    }
+
+    async function loadData() {
   try {
     console.log("Mengambil seluruh data dari Supabase secara bertahap...");
 
@@ -1705,6 +1765,7 @@ async function loadData() {
     }
 
     data = allData;
+    await syncSupplierDataToLocal();
 
     console.log(
       "✅ Seluruh data Supabase berhasil dimuat:",
@@ -1736,6 +1797,8 @@ async function loadData() {
     data = [];
     salesData = [];
     latestDeliveryByPLU = new Map();
+    try { await deleteAllRecords(); } catch (e2) {}
+    try { await deleteAllSalesRecords(); } catch (e2) {}
 
     const isPermissionDenied = e && (e.code === "42501" || /permission denied for table/i.test(e.message || ""));
     const isUnauthorized = e && (e.status === 401 || e.code === "401" || /invalid api key/i.test(e.message || ""));
@@ -1781,6 +1844,7 @@ async function loadData() {
         }
 
         salesData = allSales;
+        await syncSalesDataToLocal();
         console.log("✅ Data Sales berhasil dimuat:", salesData.length, "baris");
 
         if (salesData.length) {
@@ -1789,6 +1853,7 @@ async function loadData() {
       } catch (e) {
         console.error("❌ Gagal mengambil data Sales:", e);
         salesData = [];
+        try { await deleteAllSalesRecords(); } catch (e2) {}
         document.getElementById("salesDataInfo").textContent = e && (e.code === "42501" || /permission denied for table/i.test(e.message || ""))
           ? "Izin SELECT tabel data_sales belum diberikan"
           : e && (e.status === 401 || e.code === "401" || /invalid api key/i.test(e.message || ""))
@@ -2371,18 +2436,39 @@ async function loadData() {
       return [];
     }
 
-    function loadSalesSelect(id, values, selectedValues) {
+    function loadSalesSelect(id, values, selectedValues, allLabel) {
       const select = document.getElementById(id);
       if (!select || !select.multiple) return;
 
       const selectedSet = new Set((selectedValues || []).filter(Boolean));
-      const sortedValues = Array.from(new Set(values)).sort(function(a, b) {
-        return String(a).localeCompare(String(b), "id", { sensitivity: "base" });
-      });
+      const allOption = select.querySelector('option[value="__ALL__"]');
+      const keepAllSelected = (allOption && allOption.selected) || selectedSet.size === 0;
 
-      select.innerHTML = sortedValues.map(function(value) {
-        return '<option value="' + safe(value) + '"' + (selectedSet.has(value) ? ' selected' : '') + '>' + safe(value) + '</option>';
-      }).join("");
+      const uniqueValues = Array.from(new Set(values));
+
+      select.innerHTML =
+        '<option value="__ALL__"' + (keepAllSelected ? ' selected' : '') + '>' + safe(allLabel || "All") + '</option>' +
+        uniqueValues.map(function(value) {
+          return '<option value="' + safe(value) + '"' + (selectedSet.has(value) ? ' selected' : '') + '>' + safe(value) + '</option>';
+        }).join("");
+    }
+
+    function handleSalesFilterChange(select) {
+      const allOption = select.querySelector('option[value="__ALL__"]');
+      if (allOption) {
+        if (allOption.selected) {
+          Array.from(select.options).forEach(function(option) {
+            if (option.value !== "__ALL__") option.selected = false;
+          });
+        } else {
+          const hasOther = Array.from(select.options).some(function(option) {
+            return option.value !== "__ALL__" && option.selected;
+          });
+          if (!hasOther) allOption.selected = true;
+        }
+      }
+
+      renderSalesDashboard();
     }
 
     function getSalesFilteredData() {
@@ -2430,6 +2516,18 @@ async function loadData() {
         { id: "salesProductFilter", field: "DESKRIPSI_PRODUK" }
       ];
 
+      const allLabels = {
+        salesDCFilter: "All DC Name",
+        salesYearFilter: "All Tahun",
+        salesMonthFilter: "All Bulan",
+        salesDivisionFilter: "All Divisi",
+        salesCategoryFilter: "All Kategori",
+        salesPrincipalFilter: "All Principal",
+        salesDepartmentFilter: "All Departemen",
+        salesBrandFilter: "All Brand",
+        salesProductFilter: "All Deskripsi Produk"
+      };
+
       salesFilterConfig.forEach(function(config) {
         const currentValues = getSelectedValuesForSelect(config.id);
         const dataValues = values(config.field).sort(function(a, b) {
@@ -2437,7 +2535,7 @@ async function loadData() {
           if (config.field === "BULAN") return getSalesMonthNumber(a) - getSalesMonthNumber(b);
           return String(a).localeCompare(String(b), "id", { sensitivity: "base" });
         });
-        loadSalesSelect(config.id, dataValues, currentValues);
+        loadSalesSelect(config.id, dataValues, currentValues, allLabels[config.id] || "All");
       });
     }
 
@@ -3538,6 +3636,48 @@ async function loadData() {
       renderTablePage();
     }
 
+    function pushRecordUpdateToSupabase(record, changes) {
+      return new Promise(function(resolve) {
+        (async function() {
+          try {
+            if (!supabaseClient || !supabaseClient.auth || !currentRole) {
+              resolve({ remoteOk: false, remoteError: null });
+              return;
+            }
+
+            const { data: sessionData } = await supabaseClient.auth.getSession();
+            if (!sessionData || !sessionData.session) {
+              resolve({ remoteOk: false, remoteError: null });
+              return;
+            }
+
+            let match = {};
+            if (record.id !== undefined && record.id !== null) {
+              match = { id: record.id };
+            } else if (record._id !== undefined && record._id !== null) {
+              match = { id: record._id };
+            } else {
+              match = {
+                SUPPLIER_CODE: String(record.SUPPLIER_CODE || "").trim(),
+                PLU: String(record.PLU || "").trim(),
+                PO_NUMBER: String(record.PO_NUMBER || "").trim(),
+                DC_NAME: String(record.DC_NAME || "").trim()
+              };
+            }
+
+            const { error } = await supabaseClient
+              .from("data_supplier")
+              .update(changes)
+              .match(match);
+
+            resolve({ remoteOk: !error, remoteError: error });
+          } catch (e) {
+            resolve({ remoteOk: false, remoteError: e });
+          }
+        })();
+      });
+    }
+
     function updateRecord(id, changes) {
       return new Promise((resolve, reject) => {
         const transaction = db.transaction(STORE_NAME, "readwrite");
@@ -3561,7 +3701,11 @@ async function loadData() {
 
             if (index >= 0) Object.assign(data[index], changes);
 
-            resolve();
+            pushRecordUpdateToSupabase(record, changes).then(function(result) {
+              resolve(result);
+            }).catch(function(reason) {
+              resolve({ remoteOk: false, remoteError: reason });
+            });
           };
 
           updateRequest.onerror = function() {
@@ -3590,12 +3734,17 @@ async function loadData() {
       }
 
       try {
-        await updateRecord(id, {
+        const result = await updateRecord(id, {
           STATUS: newStatus,
           UPDATE_DATE: new Date().toISOString()
         });
 
-        showToast("Status berhasil diubah.");
+        if (result && !result.remoteOk && result.remoteError) {
+          console.warn("Sinkron ke Supabase gagal:", result.remoteError);
+          showToast("Tersimpan lokal; sinkron Supabase belum aktif (cek RLS/skema).");
+        } else {
+          showToast("Status berhasil diubah.");
+        }
         renderDashboard();
       } catch (e) {
         console.error(e);
@@ -3624,13 +3773,19 @@ async function loadData() {
           ? note + " | Edit: " + date + " oleh " + editor
           : "Edit: " + date + " oleh " + editor;
 
-        await updateRecord(id, {
+        const result = await updateRecord(id, {
           KETERANGAN: formattedValue,
           UPDATE_DATE: now.toISOString()
         });
 
+        if (result && !result.remoteOk && result.remoteError) {
+          console.warn("Sinkron ke Supabase gagal:", result.remoteError);
+          showToast("Tersimpan lokal; sinkron Supabase belum aktif (cek RLS/skema).");
+        } else {
+          showToast("Keterangan berhasil disimpan.");
+        }
+
         renderEmptyItemsTable();
-        showToast("Keterangan berhasil disimpan.");
       } catch (e) {
         console.error(e);
         showToast("Gagal menyimpan keterangan.");
