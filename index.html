@@ -2075,7 +2075,7 @@ async function syncSupplierDataToLocal() {
       if (excludedFilter !== "stockConditionFilter") {
         const stockCondition = document.getElementById("stockConditionFilter").value;
         if (stockCondition) {
-          const isEmpty = parseNumber(item.STOCK_QTY) === 0;
+          const isEmpty = isEmptyStock(item);
           if (stockCondition !== (isEmpty ? "kosong" : "aman")) return false;
         }
       }
@@ -3163,7 +3163,7 @@ async function syncSupplierDataToLocal() {
 
       getFilteredData()
         .filter(function(item) {
-          return parseNumber(item.STOCK_QTY) === 0 &&
+          return isEmptyStock(item) &&
             (!activeSupplier || normalizeSupplierCode(item.SUPPLIER_CODE) === activeSupplier) &&
             (!activeDC || normalizeSearchText(item.DC_NAME) === activeDC);
         })
@@ -3229,7 +3229,7 @@ async function syncSupplierDataToLocal() {
 
       getFilteredData()
         .filter(function(item) {
-          return parseNumber(item.STOCK_QTY) === 0 &&
+          return isEmptyStock(item) &&
             (!selectedSupplier || normalizeSupplierCode(item.SUPPLIER_CODE) === selectedSupplier);
         })
         .forEach(function(item) {
@@ -3268,7 +3268,7 @@ async function syncSupplierDataToLocal() {
 
       getFilteredData()
         .filter(function(item) {
-          return parseNumber(item.STOCK_QTY) === 0 &&
+          return isEmptyStock(item) &&
             (!selectedDC || normalizeSearchText(item.DC_NAME) === selectedDC);
         })
         .forEach(function(item) {
@@ -3305,14 +3305,17 @@ async function syncSupplierDataToLocal() {
       return set;
     }
 
+    function isEmptyStock(item) {
+      return parseNumber(item.STOCK_QTY) <= 0 || parseNumber(item.DSI_STOCK) === 0;
+    }
+
     function getUniqueEmptyStockPLU(rows) {
       const set = new Set();
 
       rows.forEach(function(item) {
         const plu = String(item.PLU || "").trim().toUpperCase();
-        const stock = parseNumber(item.STOCK_QTY);
 
-        if (plu && stock <= 0) {
+        if (plu && isEmptyStock(item)) {
           set.add(plu);
         }
       });
