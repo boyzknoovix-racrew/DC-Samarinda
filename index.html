@@ -1248,9 +1248,9 @@
           </div>
 
           <div class="filter-field">
-            <label for="dcNameFilter">All DC Name</label>
+            <label for="dcNameFilter">All DC Code</label>
             <select id="dcNameFilter" onchange="applyFilters()">
-              <option value="">All DC Name</option>
+              <option value="">All DC Code</option>
             </select>
           </div>
 
@@ -1471,6 +1471,7 @@
                 <tr>
                   <th>PLU</th>
                   <th>PLU DESC</th>
+                  <th>DC CODE</th>
                   <th id="emptyStockQtyHeader">QTY STOCK</th>
                   <th>DSI STOCK</th>
                   <th>LAST DELIVERY</th>
@@ -2035,8 +2036,8 @@ async function syncSupplierDataToLocal() {
       }
 
       if (excludedFilter !== "dcNameFilter") {
-        const dcName = document.getElementById("dcNameFilter").value;
-        if (dcName && normalizeSearchText(item.DC_NAME) !== dcName) return false;
+        const dcCode = normalizeSupplierCode(document.getElementById("dcNameFilter").value);
+        if (dcCode && normalizeSupplierCode(item.DC_CODE) !== dcCode) return false;
       }
 
       const date = getServiceLevelDate(item);
@@ -2257,24 +2258,24 @@ async function syncSupplierDataToLocal() {
         ? normalizeSupplierCode(currentUser)
         : normalizeSupplierCode(document.getElementById("supplierFilter").value);
       const selectedDC = sel.value;
-      const names = new Map();
+      const dcMap = new Map();
 
       getRowsForFilter("dcNameFilter").forEach(function(item) {
+        const code = normalizeSupplierCode(item.DC_CODE);
         const name = String(item.DC_NAME || "").trim();
-        const normalized = normalizeSearchText(name);
 
-        if (normalized && !names.has(normalized)) names.set(normalized, name);
+        if (code && !dcMap.has(code)) dcMap.set(code, name);
       });
 
-      sel.innerHTML = '<option value="">All DC Name</option>';
-      Array.from(names.values())
+      sel.innerHTML = '<option value="">All DC Code</option>';
+      Array.from(dcMap.entries())
         .sort(function(a, b) {
-          return a.localeCompare(b, "id", { sensitivity: "base" });
+          return a[0].localeCompare(b[0], "id", { sensitivity: "base" });
         })
-        .forEach(function(name) {
+        .forEach(function([code, name]) {
           const option = document.createElement("option");
-          option.value = normalizeSearchText(name);
-          option.textContent = name;
+          option.value = code;
+          option.textContent = name ? name + " - " + code : code;
           sel.appendChild(option);
         });
 
@@ -3143,6 +3144,17 @@ async function syncSupplierDataToLocal() {
       renderSalesTopTable("minusMarginProductTable", rows, "DESKRIPSI_PRODUK", "negative", "MARGIN_RPH");
     }
 
+    function getRowLatestDelivery(item) {
+      let latest = null;
+
+      [item.LAST_DELIVERY_DATE, item.BTB_DATE].forEach(function(value) {
+        const date = parseDate(value);
+        if (date && (!latest || date > latest)) latest = date;
+      });
+
+      return latest;
+    }
+
     function renderEmptyItemsTable() {
       const tbody = document.getElementById("emptyItemsTable");
       const groups = new Map();
@@ -3165,28 +3177,35 @@ async function syncSupplierDataToLocal() {
         .filter(function(item) {
           return isEmptyStock(item) &&
             (!activeSupplier || normalizeSupplierCode(item.SUPPLIER_CODE) === activeSupplier) &&
-            (!activeDC || normalizeSearchText(item.DC_NAME) === activeDC);
+            (!activeDC || normalizeSupplierCode(item.DC_CODE) === activeDC);
         })
         .forEach(function(item) {
           const plu = String(item.PLU || "").trim().toUpperCase();
           if (!plu) return;
 
+          const dcCode = normalizeSupplierCode(item.DC_CODE);
+          // Kondisi kosong bersifat per-DC: satu PLU di DC berbeda diperlakukan terpisah.
+          const key = plu + "||" + dcCode;
+
           const searchText = normalizeSearchText([
             item.PLU,
             item.PLU_DESC,
             item.SUPPLIER_CODE,
-            item.SUPPLIER_NAME
+            item.SUPPLIER_NAME,
+            dcCode
           ].join(" "));
           if (query && !searchText.includes(query)) return;
 
-          const latestDelivery = getLatestDeliveryDateByPLU(item);
-          const existing = groups.get(plu);
+          const latestDelivery = getRowLatestDelivery(item);
+          const existing = groups.get(key);
 
           if (!existing ||
             (latestDelivery && (!existing.lastDelivery || latestDelivery > existing.lastDelivery))) {
-            groups.set(plu, {
+            groups.set(key, {
               plu: plu,
               description: String(item.PLU_DESC || "").trim(),
+              dcCode: dcCode,
+              dcName: String(item.DC_NAME || "").trim(),
               stockQty: item.STOCK_QTY,
               dsiStock: item.DSI_STOCK,
               lastDelivery: latestDelivery,
@@ -3200,7 +3219,8 @@ async function syncSupplierDataToLocal() {
         if (!a.lastDelivery && b.lastDelivery) return -1;
         if (a.lastDelivery && !b.lastDelivery) return 1;
         if (a.lastDelivery && b.lastDelivery) return a.lastDelivery - b.lastDelivery;
-        return a.plu.localeCompare(b.plu, "id", { sensitivity: "base" });
+        const byDC = a.dcCode.localeCompare(b.dcCode, "id", { sensitivity: "base" });
+        return byDC || a.plu.localeCompare(b.plu, "id", { sensitivity: "base" });
       });
 
       tbody.innerHTML = rows.map(function(row) {
@@ -3210,6 +3230,7 @@ async function syncSupplierDataToLocal() {
         return "<tr>" +
           "<td>" + safe(row.plu) + "</td>" +
           "<td>" + safe(row.description || "-") + "</td>" +
+          "<td>" + safe(row.dcCode || "-") + "</td>" +
           (currentRole === "admin" ? "<td>" + formatNumber(row.stockQty) + "</td>" : "") +
           "<td>" + formatNumber(row.dsiStock) + "</td>" +
           "<td>" + safe(row.lastDelivery ? formatDate(row.lastDelivery) : "Belum pernah") + "</td>" +
@@ -3225,7 +3246,7 @@ async function syncSupplierDataToLocal() {
     function loadEmptyItemsDCFilter(selectedSupplier) {
       const sel = document.getElementById("emptyItemsDCFilter");
       const selectedDC = sel.value;
-      const names = new Map();
+      const dcMap = new Map();
 
       getFilteredData()
         .filter(function(item) {
@@ -3233,20 +3254,20 @@ async function syncSupplierDataToLocal() {
             (!selectedSupplier || normalizeSupplierCode(item.SUPPLIER_CODE) === selectedSupplier);
         })
         .forEach(function(item) {
+          const code = normalizeSupplierCode(item.DC_CODE);
           const name = String(item.DC_NAME || "").trim();
-          const normalized = normalizeSearchText(name);
-          if (normalized) names.set(normalized, name);
+          if (code && !dcMap.has(code)) dcMap.set(code, name);
         });
 
-      sel.innerHTML = '<option value="">All DC Name</option>';
-      Array.from(names.entries())
+      sel.innerHTML = '<option value="">All DC Code</option>';
+      Array.from(dcMap.entries())
         .sort(function(a, b) {
-          return a[1].localeCompare(b[1], "id", { sensitivity: "base" });
+          return a[0].localeCompare(b[0], "id", { sensitivity: "base" });
         })
-        .forEach(function([value, label]) {
+        .forEach(function([code, name]) {
           const option = document.createElement("option");
-          option.value = value;
-          option.textContent = label;
+          option.value = code;
+          option.textContent = name ? name + " - " + code : code;
           sel.appendChild(option);
         });
 
@@ -3269,7 +3290,7 @@ async function syncSupplierDataToLocal() {
       getFilteredData()
         .filter(function(item) {
           return isEmptyStock(item) &&
-            (!selectedDC || normalizeSearchText(item.DC_NAME) === selectedDC);
+            (!selectedDC || normalizeSupplierCode(item.DC_CODE) === selectedDC);
         })
         .forEach(function(item) {
           const code = normalizeSupplierCode(item.SUPPLIER_CODE);
@@ -3315,8 +3336,9 @@ async function syncSupplierDataToLocal() {
       rows.forEach(function(item) {
         const plu = String(item.PLU || "").trim().toUpperCase();
 
+        // Dihitung unik per kombinasi PLU + DC agar kondisi stock mengikuti DC masing-masing.
         if (plu && isEmptyStock(item)) {
-          set.add(plu);
+          set.add(plu + "||" + normalizeSupplierCode(item.DC_CODE || ""));
         }
       });
 
