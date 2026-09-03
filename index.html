@@ -4670,6 +4670,17 @@ console.log(
 async function testSupabaseConnection() {
   try {
     const { data, error } = await supabaseClient
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+
+console.log("🔐 USER:", sessionData?.session?.user);
+console.log(
+  "🔐 USER METADATA:",
+  sessionData?.session?.user?.user_metadata
+);
+console.log(
+  "🔐 ROLE JWT:",
+  sessionData?.session?.user?.user_metadata?.role
+);
       .from("data_supplier")
       .select("*")
       .limit(5);
