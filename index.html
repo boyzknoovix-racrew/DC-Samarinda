@@ -687,99 +687,273 @@
 
     .sales-filter-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(160px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(5, minmax(170px, 1fr));
+      gap: 14px;
       align-items: start;
     }
 
-    .sales-filter-grid .multi-filter {
-      width: 100%;
-      min-height: 180px;
-      background: #fff;
-      border: 1px solid #e7b39f;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.2);
+    @media (max-width: 1400px) {
+      .sales-filter-grid { grid-template-columns: repeat(4, minmax(170px, 1fr)); }
     }
 
-    .sales-filter-grid .multi-filter-button {
+    @media (max-width: 1100px) {
+      .sales-filter-grid { grid-template-columns: repeat(3, minmax(180px, 1fr)); }
+    }
+
+    .sales-filter-head {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      padding: 10px 12px;
-      border: 0;
-      background: #f7d7c8;
-      color: #4b2e24;
-      font-weight: bold;
-      text-align: left;
-      font-size: 12px;
-      border-bottom: 1px solid #e7b39f;
-      cursor: pointer;
+      gap: 10px;
     }
 
-    .sales-filter-grid .multi-filter-button::after {
-      content: "☰";
-      font-size: 12px;
-      opacity: .8;
-    }
-
-    .sales-filter-grid .multi-filter-options {
-      position: static !important;
-      display: block !important;
-      max-height: 220px;
-      overflow-y: auto;
+    .btn-reset {
+      border: 1px solid #e2e8f0;
       background: #fff;
-      border: 0;
-      box-shadow: none;
-      padding: 8px;
-      border-radius: 0;
-    }
-
-    .sales-filter-grid .multi-filter-option {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      color: #1f2937;
-      background: #fdf2ee;
-      margin-bottom: 4px;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 10px;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: border-color .15s ease, color .15s ease, background .15s ease, transform .15s ease;
     }
 
-    .sales-filter-grid .multi-filter-option:hover {
-      background: #f8e1d5;
-    }
-
-    .sales-filter-grid .multi-filter-option input {
-      width: 14px;
-      height: 14px;
-      margin: 0;
-      accent-color: #d97706;
-    }
-
-    .sales-filter-grid select:focus {
-      border-color: #0891b2;
-      box-shadow: 0 0 0 3px rgba(8,145,178,.1);
+    .btn-reset:hover {
+      border-color: #fca5a5;
+      color: #b91c1c;
+      background: #fef2f2;
+      transform: translateY(-1px);
     }
 
     .sales-filter-field {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      min-width: 0;
     }
 
-    .sales-filter-field label {
-      font-size: 12px;
-      font-weight: bold;
+    .sales-filter-field > label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .5px;
       color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .sales-filter-field select {
+    .sales-filter-field > label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, #e2e8f0, transparent);
+    }
+
+    .ms-select { position: relative; width: 100%; }
+
+    .ms-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       width: 100%;
-      min-height: 140px;
+      padding: 9px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+      color: #0f172a;
+      font-size: 12.5px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .ms-btn:hover { border-color: #a5b4fc; background: #fafaff; }
+
+    .ms-select.open .ms-btn {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+    }
+
+    .ms-btn-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ms-btn-title.ms-has-selection { color: #4338ca; }
+
+    .ms-btn-count {
+      flex-shrink: 0;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: #e0e7ff;
+      color: #4338ca;
+      font-size: 10.5px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ms-btn-icon {
+      flex-shrink: 0;
+      color: #94a3b8;
+      font-size: 9px;
+      transition: transform .2s ease;
+    }
+
+    .ms-select.open .ms-btn-icon { transform: rotate(180deg); }
+
+    .ms-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 60;
+      display: none;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 18px 40px rgba(15,23,42,.18);
+      overflow: hidden;
+    }
+
+    .ms-select.open .ms-dropdown {
+      display: block;
+      animation: msPop .16s ease;
+    }
+
+    @keyframes msPop {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .ms-dropdown-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 9px 11px;
+      border-bottom: 1px solid #f1f5f9;
+      background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+    }
+
+    .ms-count-text { font-size: 11px; color: #475569; font-weight: 700; }
+    .ms-count-text b { color: #4338ca; }
+
+    .ms-clear-btn {
+      border: 0;
+      background: transparent;
+      color: #dc2626;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 3px 7px;
+      border-radius: 7px;
+      transition: background .14s ease;
+    }
+
+    .ms-clear-btn:hover { background: #fee2e2; }
+
+    .ms-search { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
+
+    .ms-search input {
+      width: 100%;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 6px 9px;
+      font-size: 11.5px;
+      outline: none;
+      background: #f8fafc;
+      transition: border-color .15s ease, background .15s ease;
+    }
+
+    .ms-search input:focus { border-color: #6366f1; background: #fff; }
+
+    .ms-options { max-height: 190px; overflow-y: auto; padding: 6px; }
+
+    .ms-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 9px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #334155;
+      cursor: pointer;
+      transition: background .14s ease;
+    }
+
+    .ms-option:hover { background: #eef2ff; }
+
+    .ms-option input {
+      flex-shrink: 0;
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      accent-color: #6366f1;
+      cursor: pointer;
+    }
+
+    .ms-option-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ms-option.empty { color: #94a3b8; font-style: italic; cursor: default; }
+
+    .ms-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
+    .ms-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 100%;
+      padding: 3px 6px 3px 9px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+
+    .ms-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .ms-chip button {
+      flex-shrink: 0;
+      border: 0;
+      background: rgba(255,255,255,.25);
+      color: #fff;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      font-size: 10px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background .14s ease;
+    }
+
+    .ms-chip button:hover { background: rgba(255,255,255,.45); }
+
+    .ms-chip-more {
+      align-self: center;
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 700;
     }
 
     .sales-cards {
@@ -1489,61 +1663,181 @@
         <div class="filter-panel">
           <div class="filter-heading">
             <h3>Filter Dashboard Sales</h3>
+            <div class="sales-filter-head">
+              <button type="button" class="btn-reset" onclick="resetSalesFilters()">↺ Reset Filter</button>
+            </div>
           </div>
           <div class="sales-filter-grid">
             <div class="sales-filter-field">
               <label for="salesDCFilter">DC Name</label>
-              <select id="salesDCFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
-                <option value="__ALL__" selected>All DC Name</option>
-              </select>
+              <div class="ms-select" id="salesDCFilter" data-all-label="All DC Name">
+                <button type="button" class="ms-btn" onclick="toggleSalesDropdown(this.parentElement.id)">
+                  <span class="ms-btn-title" data-title>All DC Name</span>
+                  <span class="ms-btn-count" data-count style="display:none">0</span>
+                  <span class="ms-btn-icon">▼</span>
+                </button>
+                <div class="ms-dropdown">
+                  <div class="ms-dropdown-head">
+                    <span class="ms-count-text" data-head-count>Semua data</span>
+                    <button type="button" class="ms-clear-btn" onclick="clearSalesFilter(this.closest('.ms-select').id)">✕ Bersihkan</button>
+                  </div>
+                  <div class="ms-search"><input type="text" placeholder="Cari data..." oninput="filterSalesOptions(this.closest('.ms-select').id, this.value)"></div>
+                  <div class="ms-options" data-options></div>
+                </div>
+                <div class="ms-chips" data-chips></div>
+              </div>
             </div>
             <div class="sales-filter-field">
               <label for="salesYearFilter">Tahun</label>
-              <select id="salesYearFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
-                <option value="__ALL__" selected>All Tahun</option>
-              </select>
+              <div class="ms-select" id="salesYearFilter" data-all-label="All Tahun">
+                <button type="button" class="ms-btn" onclick="toggleSalesDropdown(this.parentElement.id)">
+                  <span class="ms-btn-title" data-title>All Tahun</span>
+                  <span class="ms-btn-count" data-count style="display:none">0</span>
+                  <span class="ms-btn-icon">▼</span>
+                </button>
+                <div class="ms-dropdown">
+                  <div class="ms-dropdown-head">
+                    <span class="ms-count-text" data-head-count>Semua data</span>
+                    <button type="button" class="ms-clear-btn" onclick="clearSalesFilter(this.closest('.ms-select').id)">✕ Bersihkan</button>
+                  </div>
+                  <div class="ms-search"><input type="text" placeholder="Cari data..." oninput="filterSalesOptions(this.closest('.ms-select').id, this.value)"></div>
+                  <div class="ms-options" data-options></div>
+                </div>
+                <div class="ms-chips" data-chips></div>
+              </div>
             </div>
             <div class="sales-filter-field">
               <label for="salesMonthFilter">Bulan</label>
-              <select id="salesMonthFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
-                <option value="__ALL__" selected>All Bulan</option>
-              </select>
+              <div class="ms-select" id="salesMonthFilter" data-all-label="All Bulan">
+                <button type="button" class="ms-btn" onclick="toggleSalesDropdown(this.parentElement.id)">
+                  <span class="ms-btn-title" data-title>All Bulan</span>
+                  <span class="ms-btn-count" data-count style="display:none">0</span>
+                  <span class="ms-btn-icon">▼</span>
+                </button>
+                <div class="ms-dropdown">
+                  <div class="ms-dropdown-head">
+                    <span class="ms-count-text" data-head-count>Semua data</span>
+                    <button type="button" class="ms-clear-btn" onclick="clearSalesFilter(this.closest('.ms-select').id)">✕ Bersihkan</button>
+                  </div>
+                  <div class="ms-search"><input type="text" placeholder="Cari data..." oninput="filterSalesOptions(this.closest('.ms-select').id, this.value)"></div>
+                  <div class="ms-options" data-options></div>
+                </div>
+                <div class="ms-chips" data-chips></div>
+              </div>
             </div>
             <div class="sales-filter-field">
               <label for="salesDivisionFilter">Divisi</label>
-              <select id="salesDivisionFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
-                <option value="__ALL__" selected>All Divisi</option>
-              </select>
+              <div class="ms-select" id="salesDivisionFilter" data-all-label="All Divisi">
+                <button type="button" class="ms-btn" onclick="toggleSalesDropdown(this.parentElement.id)">
+                  <span class="ms-btn-title" data-title>All Divisi</span>
+                  <span class="ms-btn-count" data-count style="display:none">0</span>
+                  <span class="ms-btn-icon">▼</span>
+                </button>
+                <div class="ms-dropdown">
+                  <div class="ms-dropdown-head">
+                    <span class="ms-count-text" data-head-count>Semua data</span>
+                    <button type="button" class="ms-clear-btn" onclick="clearSalesFilter(this.closest('.ms-select').id)">✕ Bersihkan</button>
+                  </div>
+                  <div class="ms-search"><input type="text" placeholder="Cari data..." oninput="filterSalesOptions(this.closest('.ms-select').id, this.value)"></div>
+                  <div class="ms-options" data-options></div>
+                </div>
+                <div class="ms-chips" data-chips></div>
+              </div>
             </div>
             <div class="sales-filter-field">
               <label for="salesCategoryFilter">Kategori</label>
-              <select id="salesCategoryFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
-                <option value="__ALL__" selected>All Kategori</option>
-              </select>
+              <div class="ms-select" id="salesCategoryFilter" data-all-label="All Kategori">
+                <button type="button" class="ms-btn" onclick="toggleSalesDropdown(this.parentElement.id)">
+                  <span class="ms-btn-title" data-title>All Kategori</span>
+                  <span class="ms-btn-count" data-count style="display:none">0</span>
+                  <span class="ms-btn-icon">▼</span>
+                </button>
+                <div class="ms-dropdown">
+                  <div class="ms-dropdown-head">
+                    <span class="ms-count-text" data-head-count>Semua data</span>
+                    <button type="button" class="ms-clear-btn" onclick="clearSalesFilter(this.closest('.ms-select').id)">✕ Bersihkan</button>
+                  </div>
+                  <div class="ms-search"><input type="text" placeholder="Cari data..." oninput="filterSalesOptions(this.closest('.ms-select').id, this.value)"></div>
+                  <div class="ms-options" data-options></div>
+                </div>
+                <div class="ms-chips" data-chips></div>
+              </div>
             </div>
             <div class="sales-filter-field">
               <label for="salesPrincipalFilter">Principal</label>
-              <select id="salesPrincipalFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
-                <option value="__ALL__" selected>All Principal</option>
-              </select>
+              <div class="ms-select" id="salesPrincipalFilter" data-all-label="All Principal">
+                <button type="button" class="ms-btn" onclick="toggleSalesDropdown(this.parentElement.id)">
+                  <span class="ms-btn-title" data-title>All Principal</span>
+                  <span class="ms-btn-count" data-count style="display:none">0</span>
+                  <span class="ms-btn-icon">▼</span>
+                </button>
+                <div class="ms-dropdown">
+                  <div class="ms-dropdown-head">
+                    <span class="ms-count-text" data-head-count>Semua data</span>
+                    <button type="button" class="ms-clear-btn" onclick="clearSalesFilter(this.closest('.ms-select').id)">✕ Bersihkan</button>
+                  </div>
+                  <div class="ms-search"><input type="text" placeholder="Cari data..." oninput="filterSalesOptions(this.closest('.ms-select').id, this.value)"></div>
+                  <div class="ms-options" data-options></div>
+                </div>
+                <div class="ms-chips" data-chips></div>
+              </div>
             </div>
             <div class="sales-filter-field">
               <label for="salesDepartmentFilter">Departemen</label>
-              <select id="salesDepartmentFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
-                <option value="__ALL__" selected>All Departemen</option>
-              </select>
+              <div class="ms-select" id="salesDepartmentFilter" data-all-label="All Departemen">
+                <button type="button" class="ms-btn" onclick="toggleSalesDropdown(this.parentElement.id)">
+                  <span class="ms-btn-title" data-title>All Departemen</span>
+                  <span class="ms-btn-count" data-count style="display:none">0</span>
+                  <span class="ms-btn-icon">▼</span>
+                </button>
+                <div class="ms-dropdown">
+                  <div class="ms-dropdown-head">
+                    <span class="ms-count-text" data-head-count>Semua data</span>
+                    <button type="button" class="ms-clear-btn" onclick="clearSalesFilter(this.closest('.ms-select').id)">✕ Bersihkan</button>
+                  </div>
+                  <div class="ms-search"><input type="text" placeholder="Cari data..." oninput="filterSalesOptions(this.closest('.ms-select').id, this.value)"></div>
+                  <div class="ms-options" data-options></div>
+                </div>
+                <div class="ms-chips" data-chips></div>
+              </div>
             </div>
             <div class="sales-filter-field">
               <label for="salesBrandFilter">Brand</label>
-              <select id="salesBrandFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
-                <option value="__ALL__" selected>All Brand</option>
-              </select>
+              <div class="ms-select" id="salesBrandFilter" data-all-label="All Brand">
+                <button type="button" class="ms-btn" onclick="toggleSalesDropdown(this.parentElement.id)">
+                  <span class="ms-btn-title" data-title>All Brand</span>
+                  <span class="ms-btn-count" data-count style="display:none">0</span>
+                  <span class="ms-btn-icon">▼</span>
+                </button>
+                <div class="ms-dropdown">
+                  <div class="ms-dropdown-head">
+                    <span class="ms-count-text" data-head-count>Semua data</span>
+                    <button type="button" class="ms-clear-btn" onclick="clearSalesFilter(this.closest('.ms-select').id)">✕ Bersihkan</button>
+                  </div>
+                  <div class="ms-search"><input type="text" placeholder="Cari data..." oninput="filterSalesOptions(this.closest('.ms-select').id, this.value)"></div>
+                  <div class="ms-options" data-options></div>
+                </div>
+                <div class="ms-chips" data-chips></div>
+              </div>
             </div>
             <div class="sales-filter-field">
               <label for="salesProductFilter">Deskripsi Produk</label>
-              <select id="salesProductFilter" multiple size="5" onchange="handleSalesFilterChange(this)">
-                <option value="__ALL__" selected>All Deskripsi Produk</option>
-              </select>
+              <div class="ms-select" id="salesProductFilter" data-all-label="All Deskripsi Produk">
+                <button type="button" class="ms-btn" onclick="toggleSalesDropdown(this.parentElement.id)">
+                  <span class="ms-btn-title" data-title>All Deskripsi Produk</span>
+                  <span class="ms-btn-count" data-count style="display:none">0</span>
+                  <span class="ms-btn-icon">▼</span>
+                </button>
+                <div class="ms-dropdown">
+                  <div class="ms-dropdown-head">
+                    <span class="ms-count-text" data-head-count>Semua data</span>
+                    <button type="button" class="ms-clear-btn" onclick="clearSalesFilter(this.closest('.ms-select').id)">✕ Bersihkan</button>
+                  </div>
+                  <div class="ms-search"><input type="text" placeholder="Cari data..." oninput="filterSalesOptions(this.closest('.ms-select').id, this.value)"></div>
+                  <div class="ms-options" data-options></div>
+                </div>
+                <div class="ms-chips" data-chips></div>
+              </div>
             </div>
           </div>
         </div>
@@ -1785,6 +2079,60 @@ async function syncSupplierDataToLocal() {
       salesData = await getAllSalesData();
     }
 
+// ============================================================
+    // Helper anti-gagal untuk memuat data Supabase
+    // ============================================================
+    function isRetryableSupabaseError(err) {
+      if (!err) return false;
+      const status = Number(err.status) || 0;
+      // Rate-limit / 5xx / gagal jaringan bisa dipulihkan dengan retry
+      if (status === 429) return true;
+      if (status >= 500 && status <= 599) return true;
+      if (err.code === "429" || err.code === "500" || err.code === "503") return true;
+      const msg = String(err.message || "").toLowerCase();
+      return (
+        /failed to fetch/i.test(msg) ||
+        /network error/i.test(msg) ||
+        /network request failed/i.test(msg) ||
+        /fetch has been blocked/i.test(msg) ||
+        /timed? ?out/i.test(msg) ||
+        /too many requests/i.test(msg)
+      );
+    }
+
+    async function fetchTableBatchWithRetry(tableName, from, batchSize, logLabel) {
+      let lastError = null;
+
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        try {
+          const { data: batch, error } = await supabaseClient
+            .from(tableName)
+            .select("*")
+            .range(from, from + batchSize - 1);
+
+          if (!error) return batch || [];
+
+          lastError = error;
+          if (!isRetryableSupabaseError(error) || attempt === 4) {
+            const err = new Error(error.message || ("Query " + tableName + " gagal"));
+            err.code = error.code;
+            err.status = error.status;
+            throw err;
+          }
+        } catch (e) {
+          lastError = e;
+          if (!isRetryableSupabaseError(e) || attempt === 4) throw e;
+        }
+
+        console.warn(
+          "⚠️ " + logLabel + " (baris " + (from + 1) + "-" + (from + batchSize) +
+          ") gagal, mencoba ulang " + attempt + "/3 dalam " + (700 * attempt) + " ms..."
+        );
+        await sleep(700 * attempt);
+      }
+
+      throw lastError;
+    }
     async function loadData() {
   try {
     console.log("Mengambil seluruh data dari Supabase secara bertahap...");
@@ -1795,42 +2143,40 @@ async function syncSupplierDataToLocal() {
     let hasMore = true;
 
     while (hasMore) {
-  console.log(`Mengambil data ${from + 1} - ${from + batchSize}...`);
+      const batch = await fetchTableBatchWithRetry(
+        "data_supplier",
+        from,
+        batchSize,
+        "data_supplier"
+      );
 
-  const { data: batch, error } = await supabaseClient
-    .from("data_supplier")
-    .select("*")
-    .range(from, from + batchSize - 1);
+      if (batch && batch.length > 0) {
+        allData.push(...batch);
+      }
 
-  console.log("🔎 HASIL QUERY data_supplier:", batch);
-  console.log("🔎 ERROR data_supplier:", error);
-  console.log("🔎 JUMLAH DATA:", batch?.length);
-
-  if (error) {
-    throw error;
-  }
-
-  if (batch && batch.length > 0) {
-    allData.push(...batch);
-  }
-
-  if (!batch || batch.length < batchSize) {
-    hasMore = false;
-  } else {
-    from += batchSize;
-  }
-}
+      if (!batch || batch.length < batchSize) {
+        hasMore = false;
+      } else {
+        from += batchSize;
+      }
+    }
 
 data = allData;
 await syncSupplierDataToLocal();
 
 console.log(
-  "✅ Seluruh data Supabase berhasil dimuat:",
-  data.length,
-  "baris"
-);
+      "✅ Seluruh data data_supplier berhasil dimuat:",
+      data.length,
+      "baris"
+    );
 
     await loadSalesData();
+
+    console.log(
+      "✅ Seluruh data Supabase berhasil dimuat:",
+      data.length + salesData.length,
+      "baris (data_supplier: " + data.length + " + data_sales: " + salesData.length + ")"
+    );
 
     rebuildLatestDeliveryIndex();
 
@@ -1871,26 +2217,30 @@ console.log(
 }
 
     async function loadSalesData() {
+      const allSales = [];
       try {
         console.log("Mengambil data Sales dari Supabase...");
 
-        const allSales = [];
         const batchSize = 1000;
         let from = 0;
         let hasMore = true;
 
         while (hasMore) {
-          console.log(`Mengambil Sales ${from + 1} - ${from + batchSize}...`);
-
-          const { data: batch, error } = await supabaseClient
-            .from("data_sales")
-            .select("*")
-            .range(from, from + batchSize - 1);
-
-          if (error) throw error;
+          const batch = await fetchTableBatchWithRetry(
+            "data_sales",
+            from,
+            batchSize,
+            "data_sales"
+          );
 
           if (batch && batch.length) {
-            allSales.push(...batch.map(normalizeSalesDatabaseRow));
+            batch.forEach(function(row) {
+              try {
+                allSales.push(normalizeSalesDatabaseRow(row));
+              } catch (normErr) {
+                console.warn("⚠️ Melewatkan baris sales yang tidak bisa diproses:", normErr);
+              }
+            });
           }
 
           if (!batch || batch.length < batchSize) {
@@ -1898,6 +2248,9 @@ console.log(
           } else {
             from += batchSize;
           }
+
+          // Jeda kecil antar batch supaya tidak kena rate-limit Supabase (HTTP 429).
+          await sleep(50);
         }
 
         salesData = allSales;
@@ -1908,14 +2261,17 @@ console.log(
           console.log("Contoh Sales:", salesData[0]);
         }
       } catch (e) {
-        console.error("❌ Gagal mengambil data Sales:", e);
-        salesData = [];
-        try { await deleteAllSalesRecords(); } catch (e2) {}
+        console.error("❌ Gagal memuat sebagian data Sales:", e);
+
+        // Jangan hapus seluruhnya; pertahankan data yang sudah berhasil diambil.
+        salesData = allSales;
+        try { await syncSalesDataToLocal(); } catch (e2) {}
+
         document.getElementById("salesDataInfo").textContent = e && (e.code === "42501" || /permission denied for table/i.test(e.message || ""))
           ? "Izin SELECT tabel data_sales belum diberikan"
           : e && (e.status === 401 || e.code === "401" || /invalid api key/i.test(e.message || ""))
             ? "API key Supabase tidak valid"
-          : "Gagal memuat data sales";
+            : "Gagal memuat sebagian data sales. Menampilkan " + allSales.length + " baris yang berhasil dimuat.";
         console.warn("Pastikan tabel data_sales memiliki kolom CSV yang sesuai dan policy SELECT mengizinkan akses.");
       }
     }
@@ -2468,14 +2824,52 @@ console.log(
       if (currentRole !== "supplier") return salesData;
 
       const code = normalizeSupplierCode(currentUser);
+
+      // Kumpulkan nama supplier dari tabel utama (data_supplier) untuk
+      // dicocokkan dengan kolom Principal pada data sales.
+      const supplierNames = new Set();
+      data.forEach(function(row) {
+        if (normalizeSupplierCode(row.SUPPLIER_CODE) === code) {
+          const name = normalizeSearchText(row.SUPPLIER_NAME);
+          if (name) supplierNames.add(name);
+        }
+      });
+
       return salesData.filter(function(row) {
-        return String(row.PRINCIPAL || "").toUpperCase().includes("(" + code + ")");
+        const principal = String(row.PRINCIPAL || "").trim();
+        if (!principal) return false;
+
+        const principalUpper = principal.toUpperCase();
+        if (principalUpper.includes("(" + code + ")")) return true;
+
+        const inBrackets = (principal.match(/\(([^)]*)\)/) || [])[1] || "";
+        if (normalizeSupplierCode(inBrackets) === code) return true;
+
+        const principalName = normalizeSearchText(principal.split("(")[0].trim());
+        if (principalName && principalName.length >= 4) {
+          return Array.from(supplierNames).some(function(name) {
+            return name.length >= 4 &&
+              (principalName.includes(name) || name.includes(principalName));
+          });
+        }
+
+        return false;
       });
     }
 
     function getSelectedValuesForSelect(selectId) {
       const element = document.getElementById(selectId);
       if (!element) return [];
+
+      if (element.classList && element.classList.contains("ms-select")) {
+        return Array.from(element.querySelectorAll(".ms-option input[type=checkbox]:checked"))
+          .map(function(input) {
+            return String(input.value || "").trim();
+          })
+          .filter(function(value) {
+            return value && value !== "__ALL__";
+          });
+      }
 
       if (element.tagName === "SELECT" && element.multiple) {
         return Array.from(element.selectedOptions).map(function(option) {
@@ -2494,85 +2888,183 @@ console.log(
     }
 
     function loadSalesSelect(id, values, selectedValues, allLabel) {
-      const select = document.getElementById(id);
-      if (!select || !select.multiple) return;
+      const container = document.getElementById(id);
+      if (!container) return;
+      const optionsBox = container.querySelector("[data-options]");
+      if (!optionsBox) return;
+
+      // Simpan state dropdown yang sedang terbuka agar tidak hilang saat render ulang.
+      const wasOpen = container.classList.contains("open");
+      const searchInput = container.querySelector(".ms-search input");
+      const prevQuery = searchInput ? searchInput.value : "";
+      const prevScroll = optionsBox.scrollTop;
 
       const selectedSet = new Set((selectedValues || []).filter(Boolean));
-      const allOption = select.querySelector('option[value="__ALL__"]');
-      const keepAllSelected = (allOption && allOption.selected) || selectedSet.size === 0;
-
       const uniqueValues = Array.from(new Set(values));
 
-      select.innerHTML =
-        '<option value="__ALL__"' + (keepAllSelected ? ' selected' : '') + '>' + safe(allLabel || "All") + '</option>' +
-        uniqueValues.map(function(value) {
-          return '<option value="' + safe(value) + '"' + (selectedSet.has(value) ? ' selected' : '') + '>' + safe(value) + '</option>';
+      if (!uniqueValues.length) {
+        optionsBox.innerHTML = '<div class="ms-option empty">Tidak ada data</div>';
+      } else {
+        optionsBox.innerHTML = uniqueValues.map(function(value) {
+          const checked = selectedSet.has(value) ? " checked" : "";
+          return '<label class="ms-option"><input type="checkbox" value="' + safe(value) + '"' + checked +
+            ' onchange="onSalesFilterChange(this.closest(\'.ms-select\').id)">' +
+            '<span class="ms-option-label" title="' + safe(value) + '">' + safe(value) + '</span></label>';
         }).join("");
-    }
-
-    function handleSalesFilterChange(select) {
-      const allOption = select.querySelector('option[value="__ALL__"]');
-      if (allOption) {
-        if (allOption.selected) {
-          Array.from(select.options).forEach(function(option) {
-            if (option.value !== "__ALL__") option.selected = false;
-          });
-        } else {
-          const hasOther = Array.from(select.options).some(function(option) {
-            return option.value !== "__ALL__" && option.selected;
-          });
-          if (!hasOther) allOption.selected = true;
-        }
       }
 
+      refreshSalesFilterUI(id, allLabel);
+
+      // Pulihkan pencarian & posisi scroll.
+      if (searchInput) searchInput.value = prevQuery;
+      filterSalesOptions(id, prevQuery);
+      optionsBox.scrollTop = prevScroll;
+      if (wasOpen) container.classList.add("open");
+    }
+
+    function refreshSalesFilterUI(id, allLabel) {
+      const container = document.getElementById(id);
+      if (!container) return;
+
+      const title = container.querySelector("[data-title]");
+      const countBadge = container.querySelector("[data-count]");
+      const headCount = container.querySelector("[data-head-count]");
+      const chipsBox = container.querySelector("[data-chips]");
+      const label = allLabel || container.getAttribute("data-all-label") || "All";
+
+      const selected = getSelectedValuesForSelect(id);
+
+      if (title) {
+        const base = String(label).replace(/^All\s+/i, "");
+        title.textContent = selected.length ? base : label;
+        title.classList.toggle("ms-has-selection", selected.length > 0);
+      }
+      if (countBadge) {
+        countBadge.textContent = String(selected.length);
+        countBadge.style.display = selected.length ? "inline-flex" : "none";
+      }
+      if (headCount) {
+        headCount.innerHTML = selected.length ? "<b>" + selected.length + "</b> dipilih" : "Semua data";
+      }
+      if (chipsBox) {
+        const visible = selected.slice(0, 8);
+        let chipsHtml = visible.map(function(value) {
+          return '<span class="ms-chip" data-value="' + safe(value) + '"><span>' + safe(value) + '</span><button type="button" aria-label="Hapus filter">×</button></span>';
+        }).join("");
+        const extra = selected.length - visible.length;
+        if (extra > 0) chipsHtml += '<span class="ms-chip-more">+' + extra + ' lagi</span>';
+        chipsBox.innerHTML = chipsHtml;
+      }
+    }
+
+    function onSalesFilterChange(id) {
+      refreshSalesFilterUI(id);
       renderSalesDashboard();
     }
 
-    function getSalesFilteredData() {
-      const visibleData = getSalesVisibleData();
-      const salesFilterConfig = [
-        { id: "salesDCFilter", field: "DC" },
-        { id: "salesYearFilter", field: "TAHUN" },
-        { id: "salesMonthFilter", field: "BULAN" },
-        { id: "salesDivisionFilter", field: "DIVISI" },
-        { id: "salesCategoryFilter", field: "KATEGORI" },
-        { id: "salesPrincipalFilter", field: "PRINCIPAL" },
-        { id: "salesDepartmentFilter", field: "DEPARTEMEN" },
-        { id: "salesBrandFilter", field: "BRAND" },
-        { id: "salesProductFilter", field: "DESKRIPSI_PRODUK" }
-      ];
+    function toggleSalesDropdown(id) {
+      const container = document.getElementById(id);
+      if (!container) return;
+      const wasOpen = container.classList.contains("open");
+      document.querySelectorAll(".ms-select.open").forEach(function(el) {
+        el.classList.remove("open");
+      });
+      if (!wasOpen) container.classList.add("open");
+    }
 
-      return visibleData.filter(function(row) {
-        return salesFilterConfig.every(function(config) {
-          const selectedValues = getSelectedValuesForSelect(config.id);
-          if (!selectedValues.length) return true;
-          const rowValue = String(row[config.field] || "").trim();
-          return selectedValues.includes(rowValue);
+    function clearSalesFilter(id) {
+      const container = document.getElementById(id);
+      if (!container) return;
+      container.querySelectorAll(".ms-option input[type=checkbox]").forEach(function(input) {
+        input.checked = false;
+      });
+      onSalesFilterChange(id);
+    }
+
+    function resetSalesFilters() {
+      document.querySelectorAll(".ms-select").forEach(function(container) {
+        container.querySelectorAll(".ms-option input[type=checkbox]").forEach(function(input) {
+          input.checked = false;
         });
+      });
+      renderSalesDashboard();
+    }
+
+    function filterSalesOptions(id, query) {
+      const container = document.getElementById(id);
+      if (!container) return;
+      const q = normalizeSearchText(query);
+      container.querySelectorAll(".ms-option").forEach(function(option) {
+        if (option.classList.contains("empty")) return;
+        const labelEl = option.querySelector(".ms-option-label");
+        const text = labelEl ? normalizeSearchText(labelEl.textContent) : "";
+        option.style.display = (!q || text.includes(q)) ? "" : "none";
+      });
+    }
+
+    function removeSalesFilterValue(id, value) {
+      const container = document.getElementById(id);
+      if (!container) return;
+      container.querySelectorAll(".ms-option input[type=checkbox]").forEach(function(input) {
+        if (input.value === value) input.checked = false;
+      });
+      onSalesFilterChange(id);
+    }
+
+    document.addEventListener("click", function(event) {
+      if (!event.target.closest(".ms-select")) {
+        document.querySelectorAll(".ms-select.open").forEach(function(el) {
+          el.classList.remove("open");
+        });
+      }
+    });
+
+    document.addEventListener("click", function(event) {
+      const removeBtn = event.target.closest(".ms-chip button");
+      if (removeBtn) {
+        const chip = removeBtn.closest(".ms-chip");
+        const container = chip.closest(".ms-select");
+        removeSalesFilterValue(container.id, chip.getAttribute("data-value"));
+      }
+    });
+
+    const SALES_FILTER_CONFIG = [
+      { id: "salesDCFilter", field: "DC" },
+      { id: "salesYearFilter", field: "TAHUN" },
+      { id: "salesMonthFilter", field: "BULAN" },
+      { id: "salesDivisionFilter", field: "DIVISI" },
+      { id: "salesCategoryFilter", field: "KATEGORI" },
+      { id: "salesPrincipalFilter", field: "PRINCIPAL" },
+      { id: "salesDepartmentFilter", field: "DEPARTEMEN" },
+      { id: "salesBrandFilter", field: "BRAND" },
+      { id: "salesProductFilter", field: "DESKRIPSI_PRODUK" }
+    ];
+
+    function collectSalesFilterSelections() {
+      const map = {};
+      SALES_FILTER_CONFIG.forEach(function(config) {
+        map[config.id] = getSelectedValuesForSelect(config.id);
+      });
+      return map;
+    }
+
+    function salesRowPasses(row, selectedMap, excludedId) {
+      return SALES_FILTER_CONFIG.every(function(config) {
+        if (config.id === excludedId) return true;
+        const selected = selectedMap[config.id];
+        if (!selected || !selected.length) return true;
+        return selected.indexOf(String(row[config.field] || "").trim()) !== -1;
+      });
+    }
+
+    function getSalesFilteredData() {
+      const selectedMap = collectSalesFilterSelections();
+      return getSalesVisibleData().filter(function(row) {
+        return salesRowPasses(row, selectedMap, null);
       });
     }
 
     function loadSalesFilters() {
-      const values = function(field) {
-        return Array.from(new Set(getSalesVisibleData().map(function(row) {
-          return String(row[field] || "").trim();
-        }).filter(function(value) {
-          return value && value.toLowerCase() !== "null" && value.toLowerCase() !== "undefined";
-        })));
-      };
-
-      const salesFilterConfig = [
-        { id: "salesDCFilter", field: "DC" },
-        { id: "salesYearFilter", field: "TAHUN" },
-        { id: "salesMonthFilter", field: "BULAN" },
-        { id: "salesDivisionFilter", field: "DIVISI" },
-        { id: "salesCategoryFilter", field: "KATEGORI" },
-        { id: "salesPrincipalFilter", field: "PRINCIPAL" },
-        { id: "salesDepartmentFilter", field: "DEPARTEMEN" },
-        { id: "salesBrandFilter", field: "BRAND" },
-        { id: "salesProductFilter", field: "DESKRIPSI_PRODUK" }
-      ];
-
       const allLabels = {
         salesDCFilter: "All DC Name",
         salesYearFilter: "All Tahun",
@@ -2585,25 +3077,49 @@ console.log(
         salesProductFilter: "All Deskripsi Produk"
       };
 
-      salesFilterConfig.forEach(function(config) {
-        const currentValues = getSelectedValuesForSelect(config.id);
-        const dataValues = values(config.field).sort(function(a, b) {
+      const visibleData = getSalesVisibleData();
+      const selectedMap = collectSalesFilterSelections();
+
+      SALES_FILTER_CONFIG.forEach(function(config) {
+        // Opsi tiap filter dihitung dari baris yang tersisa setelah filter
+        // lain diterapkan, sehingga pilihan selalu sesuai data yang tampil di grafik.
+        const valueSet = new Set();
+        visibleData.forEach(function(row) {
+          if (!salesRowPasses(row, selectedMap, config.id)) return;
+          const value = String(row[config.field] || "").trim();
+          if (value && value.toLowerCase() !== "null" && value.toLowerCase() !== "undefined") {
+            valueSet.add(value);
+          }
+        });
+
+        const dataValues = Array.from(valueSet).sort(function(a, b) {
           if (config.field === "TAHUN") return Number(b) - Number(a);
           if (config.field === "BULAN") return getSalesMonthNumber(a) - getSalesMonthNumber(b);
           return String(a).localeCompare(String(b), "id", { sensitivity: "base" });
         });
+
+        // Pertahankan hanya nilai terpilih yang masih ada di data hasil filter.
+        const currentValues = (selectedMap[config.id] || []).filter(function(value) {
+          return dataValues.indexOf(value) !== -1;
+        });
+
         loadSalesSelect(config.id, dataValues, currentValues, allLabels[config.id] || "All");
       });
     }
 
     function getSalesMonthNumber(month) {
+      const clean = String(month).trim().toLowerCase();
       const names = {
         jan: 1, januari: 1, feb: 2, februari: 2, mar: 3, maret: 3,
         apr: 4, april: 4, may: 5, mei: 5, jun: 6, juni: 6,
-        jul: 7, juli: 7, aug: 8, agustus: 8, sep: 9, september: 9,
-        oct: 10, oktober: 10, nov: 11, november: 11, dec: 12, desember: 12
+        jul: 7, juli: 7, aug: 8, agustus: 8, ags: 8, sep: 9, september: 9,
+        oct: 10, oktober: 10, okt: 10, nov: 11, november: 11,
+        dec: 12, desember: 12, des: 12
       };
-      return names[String(month).trim().toLowerCase()] || 99;
+      if (names[clean]) return names[clean];
+      const numeric = parseInt(clean, 10);
+      if (!isNaN(numeric) && numeric >= 1 && numeric <= 12) return numeric;
+      return 99;
     }
 
     function normalizeSalesText(value) {
@@ -2738,13 +3254,15 @@ console.log(
     function normalizeSalesRow(row) {
       const year = String(getFlexible(row, ["TAHUN", "YEAR"], "")).trim();
       const month = String(getFlexible(row, ["BULAN", "MONTH"], "")).trim();
+      const monthLabel = toSalesMonthLabel(month);
+      const yearLabel = /^\d{4}$/.test(year) ? year : "";
       return {
         UNIT: String(getFlexible(row, ["UNIT"], "")).trim(),
         DC: String(getFlexible(row, ["DC"], "")).trim(),
-        TAHUN: year,
-        BULAN: month,
-        SALES_DATE: year && getSalesMonthNumber(month) <= 12
-          ? year + "-" + String(getSalesMonthNumber(month)).padStart(2, "0") + "-01"
+        TAHUN: yearLabel,
+        BULAN: monthLabel,
+        SALES_DATE: yearLabel && monthLabel
+          ? yearLabel + "-" + String(getSalesMonthNumber(monthLabel)).padStart(2, "0") + "-01"
           : String(getFlexible(row, ["SALES DATE", "SALES_DATE"], "")).trim(),
         PLU: String(getFlexible(row, ["PLU"], "")).trim(),
         DESKRIPSI_PRODUK: String(getFlexible(row, ["DESKRIPSI PRODUK", "DESKRIPSI_PRODUK", "PLU DESC", "PRODUCT DESCRIPTION"], "")).trim(),
@@ -2765,11 +3283,14 @@ console.log(
       const year = String(getFlexible(row, ["TAHUN", "tahun", "YEAR", "year"], "")).trim();
       const month = String(getFlexible(row, ["BULAN", "bulan", "MONTH", "month"], "")).trim();
       const date = salesDate ? new Date(salesDate) : null;
+      const dateValid = date && !isNaN(date.getTime());
+      const yearLabel = /^\d{4}$/.test(year) ? year : (dateValid ? String(date.getFullYear()) : "");
+      const monthLabel = toSalesMonthLabel(month) || (dateValid ? getSalesMonthLabels()[date.getMonth()] : "");
       return {
         UNIT: String(getFlexible(row, ["UNIT", "unit"], "")).trim(),
         DC: String(getFlexible(row, ["DC", "dc"], "")).trim(),
-        TAHUN: year || (date && !isNaN(date.getTime()) ? String(date.getFullYear()) : ""),
-        BULAN: month || (date && !isNaN(date.getTime()) ? getSalesMonthLabels()[date.getMonth()] : ""),
+        TAHUN: yearLabel,
+        BULAN: monthLabel,
         PLU: String(getFlexible(row, ["PLU", "plu"], "")).trim(),
         DESKRIPSI_PRODUK: String(getFlexible(row, ["DESKRIPSI_PRODUK", "deskripsi_produk", "DESKRIPSI PRODUK", "PLU DESC", "plu_desc", "product_description"], "")).trim(),
         DIVISI: String(getFlexible(row, ["DIVISI", "divisi", "DIVISION", "division"], "")).trim(),
@@ -2850,8 +3371,20 @@ console.log(
       event.target.value = "";
     }
 
+    if (typeof Chart !== "undefined") {
+      Chart.defaults.font.family = "'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif";
+      Chart.defaults.font.size = 11;
+      Chart.defaults.color = "#475569";
+    }
+
     function getSalesMonthLabels() {
       return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    }
+
+    function toSalesMonthLabel(value) {
+      const num = getSalesMonthNumber(value);
+      if (num < 1 || num > 12) return "";
+      return getSalesMonthLabels()[num - 1];
     }
 
     function getSalesTrendRows(rows, field) {
@@ -2885,6 +3418,7 @@ console.log(
       if (!canvas) return null;
       const currencyMode = field !== "QUANTITY";
       const trend = getSalesTrendRows(rows, field);
+      const salesTrend = percentMode ? getSalesTrendRows(rows, "SALES_NET") : null;
       const ctx = canvas.getContext("2d");
       const palette = [color, "#f97316", "#8b5cf6", "#10b981", "#ef4444"];
 
@@ -2897,12 +3431,15 @@ console.log(
           label: year,
           data: trend.values[index].map(function(value, monthIndex) {
             if (!percentMode) return value === 0 ? null : value;
-            const sales = getSalesTrendRows(rows.filter(function(row) { return row.TAHUN === year; }), "SALES_NET").values[0][monthIndex];
+            const yearIdx = salesTrend ? salesTrend.years.indexOf(year) : -1;
+            const sales = yearIdx >= 0 ? salesTrend.values[yearIdx][monthIndex] : 0;
             return sales > 0 ? value / sales * 100 : null;
           }),
           borderColor: lineColor,
           backgroundColor: gradient,
           fill: true,
+          // Sambungkan garis melewati bulan tanpa data agar tidak tampak terputus.
+          spanGaps: true,
           borderWidth: 2.5,
           pointRadius: 3,
           pointHoverRadius: 6,
@@ -2928,7 +3465,10 @@ console.log(
             },
             tooltip: {
               backgroundColor: "rgba(15,23,42,.95)",
-              padding: 10,
+              padding: 11,
+              cornerRadius: 10,
+              boxPadding: 4,
+              usePointStyle: true,
               titleFont: { size: 12, weight: "bold" },
               bodyFont: { size: 11 },
               displayColors: true,
@@ -3056,6 +3596,8 @@ console.log(
             tooltip: {
               backgroundColor: "rgba(15,23,42,.95)",
               padding: 12,
+              cornerRadius: 10,
+              boxPadding: 4,
               titleFont: { size: 13, weight: "bold" },
               bodyFont: { size: 12 },
               displayColors: false,
@@ -3625,6 +4167,9 @@ console.log(
           tooltip: {
             backgroundColor: "rgba(15,23,42,.95)",
             padding: 12,
+            cornerRadius: 10,
+            boxPadding: 4,
+            usePointStyle: true,
             titleFont: { size: 12, weight: "bold" },
             bodyFont: { size: 11 },
             displayColors: false,
@@ -3686,6 +4231,7 @@ console.log(
             borderColor: "#2563eb",
             backgroundColor: monthlyGradient,
             fill: true,
+            spanGaps: true,
             pointRadius: 5,
             pointHoverRadius: 8,
             pointBackgroundColor: "#ffffff",
@@ -3709,6 +4255,7 @@ console.log(
             borderColor: "#16a34a",
             backgroundColor: weeklyGradient,
             fill: true,
+            spanGaps: true,
             pointRadius: 5,
             pointHoverRadius: 8,
             pointBackgroundColor: "#ffffff",
