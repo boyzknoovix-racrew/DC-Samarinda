@@ -2100,20 +2100,14 @@ async function syncSupplierDataToLocal() {
       );
     }
 
-    async function fetchTableBatchWithRetry(tableName, from, batchSize, logLabel, orderColumn) {
+    async function fetchTableBatchWithRetry(tableName, from, batchSize, logLabel) {
       let lastError = null;
-      // Wajib ada .order() yang stabil (unik) sebelum .range().
-      // Tanpa ini, Postgres/PostgREST tidak menjamin urutan baris yang sama
-      // antar-request, sehingga baris yang sama bisa ikut terbawa di lebih
-      // dari satu batch (duplikat/menumpuk) sementara baris lain terlewat.
-      const orderBy = orderColumn || "id";
 
       for (let attempt = 1; attempt <= 4; attempt++) {
         try {
           const { data: batch, error } = await supabaseClient
             .from(tableName)
             .select("*")
-            .order(orderBy, { ascending: true })
             .range(from, from + batchSize - 1);
 
           if (!error) return batch || [];
@@ -2337,10 +2331,6 @@ console.log(
 
         await openApplication();
         await loadData();
-        loadYearFilter();
-        loadMonthFilter();
-        loadSupplierFilter();
-        loadDCNameFilter();
         renderDashboard();
       } catch (e) {
         console.error("Supabase Auth login gagal:", e);
@@ -2364,13 +2354,11 @@ console.log(
       const supplierFilter = document.getElementById("supplierFilter");
       supplierFilter.style.display = "";
 
-      // Catatan: filter & renderDashboard() SENGAJA tidak dipanggil di sini.
-      // Data (`data`/`salesData`) belum dimuat pada titik ini, jadi memanggilnya
-      // sekarang hanya menghasilkan render kosong yang langsung ditimpa lagi
-      // setelah loadData() selesai (render ganda + flicker/lag). Pemanggil
-      // (login() dan inisialisasi sesi) yang bertanggung jawab memanggil
-      // loadYearFilter/loadMonthFilter/loadSupplierFilter/loadDCNameFilter/
-      // renderDashboard() satu kali saja, setelah loadData() selesai.
+      loadYearFilter();
+      loadMonthFilter();
+      loadSupplierFilter();
+      loadDCNameFilter();
+      renderDashboard();
     }
 
     async function logout() {
@@ -5197,10 +5185,6 @@ console.log(
           await resolveAuthAccount(sessionData.session.user);
           await openApplication();
           await loadData();
-          loadYearFilter();
-          loadMonthFilter();
-          loadSupplierFilter();
-          loadDCNameFilter();
           renderDashboard();
           console.log("Session Supabase aktif. Total data:", data.length);
         } else {
